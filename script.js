@@ -778,9 +778,10 @@ function drawRoad(state) {
   const w = rect.width;
   const h = rect.height;
   const ctx = roadCtx;
-  const damage = Math.min(1.15, state.damage);
-  const visualDamage = Math.min(1, damage * 0.62);
-  const roughness = Math.min(0.62, visualDamage * 0.55 + value("climateSeverity") / 420);
+  const damage = Math.min(1.25, state.damage);
+  const visualDamage = Math.min(1, damage < 0.45 ? damage * 0.55 : 0.25 + (damage - 0.45) * 0.94);
+  const failureVisual = Math.max(0, (visualDamage - 0.72) / 0.28);
+  const roughness = Math.min(0.82, visualDamage * 0.72 + value("climateSeverity") / 360);
   const progress = Number(fields.time.value) / Math.max(1, value("designYears"));
   const pulse = (Math.sin(performance.now() / 650) + 1) / 2;
   const type = fields.pavementType.value;
@@ -954,51 +955,51 @@ function drawRoad(state) {
   }
   ctx.shadowBlur = 0;
 
-  ctx.fillStyle = `rgba(13, 24, 32, ${0.035 + visualDamage * 0.09})`;
+  ctx.fillStyle = `rgba(13, 24, 32, ${0.04 + visualDamage * 0.12 + failureVisual * 0.05})`;
   for (let i = 0; i < 2; i += 1) {
     const laneX = roadCenter(0.72) + (i === 0 ? -1 : 1) * roadWidth(0.72) * 0.09;
-    const rutWidth = roadWidth(0.72) * (0.02 + visualDamage * 0.026);
+    const rutWidth = roadWidth(0.72) * (0.022 + visualDamage * 0.034 + failureVisual * 0.012);
     ctx.beginPath();
-    ctx.ellipse(laneX, h * 0.67, rutWidth, h * (0.2 + visualDamage * 0.035), 0, 0, Math.PI * 2);
+    ctx.ellipse(laneX, h * 0.67, rutWidth, h * (0.22 + visualDamage * 0.045), 0, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  const crackCount = Math.floor(3 + visualDamage * 24);
+  const crackCount = Math.floor(4 + visualDamage * 32 + failureVisual * 12);
   ctx.lineCap = "round";
   for (let i = 0; i < crackCount; i += 1) {
     const seed = i * 997;
     const t = 0.08 + (((seed * 13) % 84) / 100);
     const y = roadY(t);
     const center = roadCenter(t) + Math.sin(seed) * roadWidth(t) * 0.22;
-    const length = roadWidth(t) * (0.025 + visualDamage * 0.055 + ((i % 5) * 0.004));
-    ctx.strokeStyle = `rgba(20, 25, 30, ${0.14 + visualDamage * 0.22})`;
-    ctx.lineWidth = 0.75 + t * 1.5 + visualDamage * 1.1;
+    const length = roadWidth(t) * (0.03 + visualDamage * 0.075 + failureVisual * 0.025 + ((i % 5) * 0.004));
+    ctx.strokeStyle = `rgba(20, 25, 30, ${0.16 + visualDamage * 0.28 + failureVisual * 0.12})`;
+    ctx.lineWidth = 0.8 + t * 1.7 + visualDamage * 1.25 + failureVisual * 0.6;
     ctx.beginPath();
     ctx.moveTo(center - length / 2, y);
     for (let k = 0; k < 4; k += 1) {
-      ctx.lineTo(center - length / 2 + (length * (k + 1)) / 4, y + Math.sin(seed + k) * 9 * visualDamage);
+      ctx.lineTo(center - length / 2 + (length * (k + 1)) / 4, y + Math.sin(seed + k) * (10 * visualDamage + 5 * failureVisual));
     }
     ctx.stroke();
 
     if (visualDamage > 0.32) {
-      ctx.strokeStyle = `rgba(255, 179, 64, ${0.04 + visualDamage * 0.08})`;
-      ctx.lineWidth = 0.6;
+      ctx.strokeStyle = `rgba(255, 179, 64, ${0.05 + visualDamage * 0.1 + failureVisual * 0.08})`;
+      ctx.lineWidth = 0.65 + failureVisual * 0.35;
       ctx.stroke();
     }
   }
 
-  const potholes = Math.floor(Math.max(0, (visualDamage - 0.54) * 7));
+  const potholes = Math.floor(Math.max(0, (visualDamage - 0.5) * 10 + failureVisual * 3));
   for (let i = 0; i < potholes; i += 1) {
     const t = 0.34 + ((i * 0.137) % 0.52);
     const x = roadLeft(t) + roadWidth(t) * (0.32 + ((i * 0.211) % 0.36));
     const y = roadY(t);
-    const r = 4 + t * 12 + visualDamage * 8 + (i % 3) * 2.5;
-    ctx.fillStyle = "rgba(18, 24, 30, 0.58)";
+    const r = 5 + t * 14 + visualDamage * 10 + failureVisual * 5 + (i % 3) * 2.5;
+    ctx.fillStyle = `rgba(18, 24, 30, ${0.62 + failureVisual * 0.16})`;
     ctx.beginPath();
     ctx.ellipse(x, y, r * 1.35, r * 0.72, Math.sin(i) * 0.5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "rgba(255, 179, 64, 0.28)";
-    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = `rgba(255, 179, 64, ${0.32 + failureVisual * 0.18})`;
+    ctx.lineWidth = 1.8 + failureVisual * 0.7;
     ctx.stroke();
   }
 
