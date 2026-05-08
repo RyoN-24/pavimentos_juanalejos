@@ -81,6 +81,7 @@ const outputs = {
   scenarioAResult: $("scenarioAResult"),
   scenarioBResult: $("scenarioBResult"),
   compareSummary: $("compareSummary"),
+  caseStudyNote: $("caseStudyNote"),
 };
 
 const roadCanvas = $("roadCanvas");
@@ -105,6 +106,7 @@ const subbaseLayer = $("subbaseLayer");
 const saveScenarioA = $("saveScenarioA");
 const saveScenarioB = $("saveScenarioB");
 const exportReport = $("exportReport");
+const loadSantaRosaCase = $("loadSantaRosaCase");
 
 let playing = false;
 let lastFrame = performance.now();
@@ -113,6 +115,22 @@ let scenarioA = null;
 let scenarioB = null;
 let playbackTimer = null;
 let lastPavementType = null;
+let activeCaseStudy = null;
+
+const santaRosaCase = {
+  name: "Caso real: Av. Santa Rosa",
+  source: "Estudio de Trafico Av. Santa Rosa (2018)",
+  station: "E6 Av. Argentina - Av. Morales Duarez",
+  scenario: "Escenario 2 con proyecto, con presion de llantas, sentido NS, ano 2042",
+  imda: 91033,
+  heavyShare: 4.7,
+  truckFactor: 1.44,
+  designEsal: 46_100_000,
+  asphaltDepth: 8,
+  baseDepth: 50,
+  subbaseDepth: 40,
+  note: "Caso Av. Santa Rosa: E6 Av. Argentina - Av. Morales Duarez, IMDA 91,033 veh/dia, pesados 4.7%, ESAL diseno 46.1 M. Paquete experimental: 8 cm carpeta, 50 cm base y 40 cm subbase.",
+};
 
 const pavementModes = {
   hotFlexible: {
@@ -125,7 +143,7 @@ const pavementModes = {
     metricStructure: "Número estructural SN",
     metricCapacity: "EE admisible estructura",
     layerNames: ["Carpeta asfáltica", "Base granular", "Subbase"],
-    defaults: { a1: 0.17, a2: 0.055, a3: 0.043, surface: 8, base: 20, subbase: 15, years: 20 },
+    defaults: { a1: 0.17, a2: 0.055, a3: 0.043, surface: 8, base: 50, subbase: 40, years: 20 },
     capacityFactor: 1,
   },
   coldFlexible: {
@@ -491,6 +509,33 @@ function formatLarge(n) {
   return n.toFixed(0);
 }
 
+function formatPercent(valueToFormat) {
+  return Number.isInteger(valueToFormat) ? `${valueToFormat}%` : `${valueToFormat.toFixed(1)}%`;
+}
+
+function applySantaRosaCase() {
+  stopPlayback();
+  activeCaseStudy = santaRosaCase;
+  fields.pavementType.value = "hotFlexible";
+  applyPavementModeDefaults(true);
+  fields.projectType.value = "urban";
+  fields.urbanClass.value = "arterial";
+  fields.trafficMode.value = "direct";
+  fields.directDesignEsal.value = String(santaRosaCase.designEsal);
+  fields.aadt.value = String(santaRosaCase.imda);
+  fields.heavyShare.value = String(santaRosaCase.heavyShare);
+  fields.truckFactor.value = String(santaRosaCase.truckFactor);
+  fields.asphaltDepth.value = String(santaRosaCase.asphaltDepth);
+  fields.baseDepth.value = String(santaRosaCase.baseDepth);
+  fields.subbaseDepth.value = String(santaRosaCase.subbaseDepth);
+  fields.designYears.value = "20";
+  fields.time.value = "0";
+  scenarioA = null;
+  scenarioB = null;
+  applyPeruvianNorms();
+  render();
+}
+
 function conditionFromDamage(damage, psi) {
   if (damage < 0.25 && psi > 3.7) return ["Excelente", "#1f7a5a"];
   if (damage < 0.55 && psi > 3.1) return ["Bueno", "#4b8f3a"];
@@ -554,7 +599,7 @@ function updateOutputs(state) {
   outputs.baseLayerName.textContent = mode.layerNames[1];
   outputs.subbaseLayerName.textContent = mode.layerNames[2];
 
-  outputs.heavyShare.textContent = `${value("heavyShare").toFixed(0)}%`;
+  outputs.heavyShare.textContent = formatPercent(value("heavyShare"));
   outputs.growth.textContent = `${value("growth").toFixed(1)}%`;
   outputs.asphaltDepth.textContent = `${value("asphaltDepth").toFixed(1)} cm`;
   outputs.baseDepth.textContent = `${value("baseDepth").toFixed(1)} cm`;
@@ -593,6 +638,9 @@ function updateOutputs(state) {
   outputs.failureYear.textContent = failure
     ? `Vida estimada: ${failure.toFixed(1)} anos`
     : "Vida estimada: mayor al periodo";
+
+  outputs.caseStudyNote.classList.toggle("hidden", !activeCaseStudy);
+  outputs.caseStudyNote.textContent = activeCaseStudy ? activeCaseStudy.note : "";
 }
 
 function updateEsalSteps() {
@@ -706,6 +754,21 @@ function updateComparison() {
 function reportText() {
   const status = complianceStatus();
   const mode = pavementMode();
+  const caseLines = activeCaseStudy
+    ? [
+        "Caso aplicado",
+        `Nombre: ${activeCaseStudy.name}`,
+        `Fuente: ${activeCaseStudy.source}`,
+        `Tramo/estacion: ${activeCaseStudy.station}`,
+        `Escenario usado: ${activeCaseStudy.scenario}`,
+        `IMDA referencia: ${activeCaseStudy.imda.toLocaleString("es-PE")} veh/dia`,
+        `Pesados referencia: ${activeCaseStudy.heavyShare.toFixed(1)}%`,
+        `Factor camion referencial: ${activeCaseStudy.truckFactor.toFixed(2)}`,
+        `ESAL de diseno del caso: ${formatLarge(activeCaseStudy.designEsal)}`,
+        `Paquete experimental: carpeta ${activeCaseStudy.asphaltDepth.toFixed(0)} cm, base ${activeCaseStudy.baseDepth.toFixed(0)} cm, subbase ${activeCaseStudy.subbaseDepth.toFixed(0)} cm`,
+        "",
+      ]
+    : [];
   return [
     "REPORTE RESUMEN - SIMULADOR INTEGRAL DE PAVIMENTOS",
     "",
@@ -715,6 +778,7 @@ function reportText() {
     `Criterio tecnico activo: ${technicalModeSummary()}`,
     `Resultado: ${status.title}`,
     "",
+    ...caseLines,
     "Transito y EE",
     `EE de diseno: ${formatLarge(designLaneEsal())}`,
     `EE admisible estructura: ${formatLarge(status.final.capacity)}`,
@@ -1322,6 +1386,7 @@ saveScenarioB.addEventListener("click", () => {
 });
 
 exportReport.addEventListener("click", downloadReport);
+loadSantaRosaCase.addEventListener("click", applySantaRosaCase);
 
 playPause.addEventListener("click", () => {
   if (playing) stopPlayback();
@@ -1335,8 +1400,6 @@ resetButton.addEventListener("click", () => {
 });
 
 window.addEventListener("resize", render);
-applyPavementModeDefaults(true);
-applyPeruvianNorms();
-render();
+applySantaRosaCase();
 requestAnimationFrame(animate);
 

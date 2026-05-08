@@ -318,6 +318,63 @@ output {
   line-height: 1.35;
 }
 
+.case-study {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid #bdd5da;
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+.case-study > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.case-study span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.case-study strong {
+  color: var(--primary-dark);
+  font-size: 0.94rem;
+}
+
+.case-study button {
+  min-height: 42px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--primary-dark);
+  color: #fff;
+  font-weight: 850;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.case-study button:hover {
+  background: var(--primary);
+  transform: translateY(-1px);
+}
+
+.case-note {
+  margin: 0;
+  padding: var(--space-3);
+  border-left: 4px solid var(--teal);
+  border-radius: var(--radius-xs);
+  background: var(--teal-soft);
+  color: #214a42;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .panel {
   display: none;
   gap: var(--space-4);

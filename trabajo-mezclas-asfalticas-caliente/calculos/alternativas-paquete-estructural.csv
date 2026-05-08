@@ -1,0 +1,7 @@
+alternativa,carpeta_asfaltica_cm,base_granular_cm,subbase_cm,sn,ee_admisible,psi_final,consumo_vida_pct,resultado
+A1 Seccion base,8,20,15,3.07,1083065.98,1.86,4256,No cumple
+A2 Refuerzo granular medio,8,40,50,5.60,46469595.00,2.40,99,Al limite
+A3 Carpeta 10 cm + base alta,10,50,30,5.68,51024214.91,2.55,90,Cumple
+A4 Carpeta minima compensada,8,50,40,5.74,55671373.34,2.68,83,Cumple
+A5 Carpeta minima con subbase alta,8,45,45,5.67,50877857.45,2.55,91,Cumple
+A6 Solucion robusta granular,8,50,50,6.15,92550547.65,3.21,50,Cumple

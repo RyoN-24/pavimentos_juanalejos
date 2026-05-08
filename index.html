@@ -101,6 +101,14 @@
               <span id="normName">Manual de Carreteras MTC 2014</span>
               <strong id="normValues">Pi 4.00, Pt 2.50, R 85%</strong>
             </div>
+            <div class="case-study">
+              <div>
+                <span>Caso aplicado</span>
+                <strong>Av. Santa Rosa</strong>
+              </div>
+              <button id="loadSantaRosaCase" type="button">Cargar caso real</button>
+              <p id="caseStudyNote" class="case-note hidden">Caso Av. Santa Rosa: E6 Av. Argentina - Av. Morales Duarez, IMDA 91,033 veh/dia, pesados 4.7%, ESAL diseno 46.1 M. Paquete experimental: 8 cm carpeta, 50 cm base y 40 cm subbase.</p>
+            </div>
           </div>
 
           <form class="panel active" id="traffic" autocomplete="off">
@@ -108,25 +116,25 @@
               Enfoque de ejes equivalentes
               <select id="trafficMode">
                 <option value="calculated">Calcular EE desde IMDA</option>
-                <option value="direct">Ingresar EE de diseno directamente</option>
+                <option value="direct" selected>Ingresar EE de diseno directamente</option>
               </select>
             </label>
-            <label id="directEsalWrap" class="hidden">
+            <label id="directEsalWrap">
               EE de diseno en carril de diseno
-              <input id="directDesignEsal" type="number" min="10000" max="80000000" step="10000" value="3000000" />
+              <input id="directDesignEsal" type="number" min="10000" max="80000000" step="10000" value="46100000" />
             </label>
             <label>
               1. Transito diario total (IMDA)
-              <input id="aadt" type="number" min="100" max="120000" step="100" value="8200" />
+              <input id="aadt" type="number" min="100" max="120000" step="100" value="91033" />
             </label>
             <label>
               2. Porcentaje de vehiculos pesados
-              <input id="heavyShare" type="range" min="2" max="65" step="1" value="18" />
-              <output for="heavyShare" id="heavyShareOut">18%</output>
+              <input id="heavyShare" type="range" min="2" max="65" step="0.1" value="4.7" />
+              <output for="heavyShare" id="heavyShareOut">4.7%</output>
             </label>
             <label>
               3. Factor camion promedio
-              <input id="truckFactor" type="number" min="0.1" max="8" step="0.1" value="1.8" />
+              <input id="truckFactor" type="number" min="0.1" max="8" step="0.01" value="1.44" />
             </label>
             <label>
               4. Crecimiento anual del trafico
@@ -151,13 +159,13 @@
             </label>
             <label>
               <span id="baseDepthLabel">6. Espesor de base granular, D2</span>
-              <input id="baseDepth" type="range" min="10" max="50" step="0.5" value="20" />
-              <output for="baseDepth" id="baseDepthOut">20.0 cm</output>
+              <input id="baseDepth" type="range" min="10" max="50" step="0.5" value="50" />
+              <output for="baseDepth" id="baseDepthOut">50.0 cm</output>
             </label>
             <label>
               Subbase, D3 (cm)
-              <input id="subbaseDepth" type="range" min="0" max="50" step="0.5" value="15" />
-              <output for="subbaseDepth" id="subbaseDepthOut">15.0 cm</output>
+              <input id="subbaseDepth" type="range" min="0" max="50" step="0.5" value="40" />
+              <output for="subbaseDepth" id="subbaseDepthOut">40.0 cm</output>
             </label>
             <label>
               Coeficiente a1
