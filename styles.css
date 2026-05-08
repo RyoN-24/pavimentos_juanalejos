@@ -1081,6 +1081,48 @@ body[data-pavement="pavers"] .asphalt-layer {
   line-height: 1.38;
 }
 
+.guide-card {
+  border-left: 4px solid var(--primary);
+}
+
+.guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.guide-grid article {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.guide-grid span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.guide-grid strong {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.guide-note {
+  margin-top: var(--space-3) !important;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+  color: var(--primary-dark) !important;
+  font-weight: 700;
+}
+
 @media (max-width: 1320px) {
   .simulator {
     grid-template-columns: 360px minmax(0, 1fr);
@@ -1160,7 +1202,8 @@ body[data-pavement="pavers"] .asphalt-layer {
   .lab-panel,
   .metrics,
   .compare-actions,
-  .compare-grid {
+  .compare-grid,
+  .guide-grid {
     grid-template-columns: 1fr;
   }
 
