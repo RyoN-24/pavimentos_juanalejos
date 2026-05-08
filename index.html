@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Simulador Integral de Pavimentos</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2316212b'/%3E%3Cpath d='M15 4h2v24h-2z' fill='%23f2c24d'/%3E%3Cpath d='M6 25h20l-5-18H11z' fill='%231f5f8b' opacity='.85'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <svg class="svg-sprite" aria-hidden="true">
+      <symbol id="icon-traffic" viewBox="0 0 24 24">
+        <path d="M4 17h16M6 17l2-7h8l2 7M8 17v2m8-2v2M9 10V7h6v3" />
+      </symbol>
+      <symbol id="icon-layers" viewBox="0 0 24 24">
+        <path d="m12 4 8 4-8 4-8-4 8-4Zm-7 8 7 3.5L19 12M5 16l7 3.5 7-3.5" />
+      </symbol>
+      <symbol id="icon-climate" viewBox="0 0 24 24">
+        <path d="M7 17h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 2A3 3 0 0 0 7 17Zm4 2v2m4-2v2M8 19v2" />
+      </symbol>
+      <symbol id="icon-chart" viewBox="0 0 24 24">
+        <path d="M4 19V5m0 14h16M8 15l3-4 3 2 4-6" />
+      </symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24">
+        <path d="m5 12 4 4 10-10" />
+      </symbol>
+      <symbol id="icon-report" viewBox="0 0 24 24">
+        <path d="M7 3h7l3 3v15H7V3Zm7 0v4h4M9 11h6M9 15h6M9 7h3" />
+      </symbol>
+      <symbol id="icon-road" viewBox="0 0 24 24">
+        <path d="M9 3 5 21m10-18 4 18M12 4v3m0 4v3m0 4v3" />
+      </symbol>
+      <symbol id="icon-alert" viewBox="0 0 24 24">
+        <path d="M12 4 3 20h18L12 4Zm0 6v4m0 3h.01" />
+      </symbol>
+      <symbol id="icon-gauge" viewBox="0 0 24 24">
+        <path d="M4 14a8 8 0 0 1 16 0M12 14l4-5M7 18h10M6 14h.01M18 14h.01" />
+      </symbol>
+      <symbol id="icon-ruler" viewBox="0 0 24 24">
+        <path d="M4 17 17 4l3 3L7 20l-3-3Zm4-4 2 2m1-5 2 2m1-5 2 2" />
+      </symbol>
+      <symbol id="icon-reset" viewBox="0 0 24 24">
+        <path d="M5 9V4m0 5h5M5.7 15a7 7 0 1 0 1.8-7" />
+      </symbol>
+    </svg>
+    <main class="app-shell">
+      <section class="simulator">
+        <aside class="controls" aria-label="Parametros de simulacion">
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <div>
+              <p>Laboratorio vial</p>
+              <h1>ING. JUAN ALEJOS</h1>
+              <span id="brandTitle">Simulador integral de pavimentos</span>
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Grupos de parametros">
+            <button class="tab active" data-panel="traffic" type="button">
+              <svg class="ui-icon"><use href="#icon-traffic"></use></svg>
+              <span>Trafico</span>
+            </button>
+            <button class="tab" data-panel="structure" type="button">
+              <svg class="ui-icon"><use href="#icon-layers"></use></svg>
+              <span>Estructura</span>
+            </button>
+            <button class="tab" data-panel="climate" type="button">
+              <svg class="ui-icon"><use href="#icon-climate"></use></svg>
+              <span>Ambiente</span>
+            </button>
+          </div>
+
+          <div class="norm-box" aria-label="Normativa peruana aplicada">
+            <h2>Normativa peruana</h2>
+            <label>
+              Tipo de pavimento
+              <select id="pavementType">
+                <option value="hotFlexible">Flexible en caliente</option>
+                <option value="coldFlexible">Flexible en frio</option>
+                <option value="rigid">Rigido de concreto</option>
+                <option value="pavers">Adoquinado</option>
+              </select>
+            </label>
+            <label>
+              Ambito del proyecto
+              <select id="projectType">
+                <option value="road">Carretera MTC</option>
+                <option value="urban">Pavimento urbano CE.010</option>
+              </select>
+            </label>
+            <label id="urbanClassWrap" class="hidden">
+              Tipo de via urbana
+              <select id="urbanClass">
+                <option value="express">Expresa</option>
+                <option value="arterial">Arterial</option>
+                <option value="collector">Colectora</option>
+                <option value="local">Local / estacionamiento</option>
+              </select>
+            </label>
+            <div class="norm-summary">
+              <span id="normName">Manual de Carreteras MTC 2014</span>
+              <strong id="normValues">Pi 4.00, Pt 2.50, R 85%</strong>
+            </div>
+          </div>
+
+          <form class="panel active" id="traffic" autocomplete="off">
+            <label>
+              Enfoque de ejes equivalentes
+              <select id="trafficMode">
+                <option value="calculated">Calcular EE desde IMDA</option>
+                <option value="direct">Ingresar EE de diseno directamente</option>
+              </select>
+            </label>
+            <label id="directEsalWrap" class="hidden">
+              EE de diseno en carril de diseno
+              <input id="directDesignEsal" type="number" min="10000" max="80000000" step="10000" value="3000000" />
+            </label>
+            <label>
+              1. Transito diario total (IMDA)
+              <input id="aadt" type="number" min="100" max="120000" step="100" value="8200" />
+            </label>
+            <label>
+              2. Porcentaje de vehiculos pesados
+              <input id="heavyShare" type="range" min="2" max="65" step="1" value="18" />
+              <output for="heavyShare" id="heavyShareOut">18%</output>
+            </label>
+            <label>
+              3. Factor camion promedio
+              <input id="truckFactor" type="number" min="0.1" max="8" step="0.1" value="1.8" />
+            </label>
+            <label>
+              4. Crecimiento anual del trafico
+              <input id="growth" type="range" min="0" max="12" step="0.1" value="4.2" />
+              <output for="growth" id="growthOut">4.2%</output>
+            </label>
+            <label>
+              Factor direccion
+              <input id="directionFactor" type="number" min="0.3" max="0.7" step="0.01" value="0.50" />
+            </label>
+            <label>
+              Factor carril
+              <input id="laneFactor" type="number" min="0.4" max="1" step="0.01" value="0.90" />
+            </label>
+          </form>
+
+          <form class="panel" id="structure" autocomplete="off">
+            <label>
+              <span id="surfaceDepthLabel">5. Espesor de carpeta asfaltica, D1</span>
+              <input id="asphaltDepth" type="range" min="4" max="50" step="0.5" value="8" />
+              <output for="asphaltDepth" id="asphaltDepthOut">8.0 cm</output>
+            </label>
+            <label>
+              <span id="baseDepthLabel">6. Espesor de base granular, D2</span>
+              <input id="baseDepth" type="range" min="10" max="50" step="0.5" value="20" />
+              <output for="baseDepth" id="baseDepthOut">20.0 cm</output>
+            </label>
+            <label>
+              Subbase, D3 (cm)
+              <input id="subbaseDepth" type="range" min="0" max="50" step="0.5" value="15" />
+              <output for="subbaseDepth" id="subbaseDepthOut">15.0 cm</output>
+            </label>
+            <label>
+              Coeficiente a1
+              <input id="a1" type="number" min="0.05" max="0.25" step="0.005" value="0.170" />
+            </label>
+            <label>
+              Coeficiente a2
+              <input id="a2" type="number" min="0.02" max="0.08" step="0.005" value="0.055" />
+            </label>
+            <label>
+              Coeficiente a3
+              <input id="a3" type="number" min="0.02" max="0.07" step="0.005" value="0.043" />
+            </label>
+            <label>
+              CBR subrasante (%)
+              <input id="cbr" type="range" min="2" max="25" step="0.5" value="8" />
+              <output for="cbr" id="cbrOut">8.0%</output>
+            </label>
+            <div class="mode-settings hidden" id="coldSettings">
+              <h2>Parámetros de solución en frío</h2>
+              <label>
+                Superficie de rodadura
+                <select id="coldSurfaceType">
+                  <option value="coldMix">Mezcla asfáltica en frío</option>
+                  <option value="surfaceTreatment">Tratamiento superficial bicapa</option>
+                </select>
+              </label>
+            </div>
+            <div class="mode-settings hidden" id="rigidSettings">
+              <h2>Parámetros de pavimento rígido</h2>
+              <label>
+                Transferencia de carga, J
+                <select id="rigidLoadTransfer">
+                  <option value="2.8">J = 2.8, con pasadores y berma de concreto</option>
+                  <option value="3.2">J = 3.2, con pasadores</option>
+                  <option value="3.8">J = 3.8, transferencia media</option>
+                  <option value="4.0">J = 4.0, sin pasadores</option>
+                </select>
+              </label>
+            </div>
+            <div class="mode-settings hidden" id="paverSettings">
+              <h2>Parámetros de adoquinado</h2>
+              <label>
+                Tipo de base
+                <select id="paverBaseType">
+                  <option value="granular">Base granular</option>
+                  <option value="asphaltTreated">Base tratada con asfalto</option>
+                  <option value="cementTreated">Base tratada con cemento</option>
+                </select>
+              </label>
+              <label>
+                Confinamiento lateral
+                <select id="edgeRestraint">
+                  <option value="adequate">Confinamiento adecuado</option>
+                  <option value="weak">Confinamiento deficiente</option>
+                </select>
+              </label>
+            </div>
+          </form>
+
+          <form class="panel" id="climate" autocomplete="off">
+            <label>
+              Drenaje base, m2
+              <input id="m2" type="number" min="0.6" max="1.4" step="0.05" value="1.00" />
+            </label>
+            <label>
+              Drenaje subbase, m3
+              <input id="m3" type="number" min="0.6" max="1.4" step="0.05" value="0.95" />
+            </label>
+            <label>
+              Severidad climatica
+              <input id="climateSeverity" type="range" min="0" max="100" step="1" value="32" />
+              <output for="climateSeverity" id="climateSeverityOut">32</output>
+            </label>
+            <label>
+              Confiabilidad (%)
+              <input id="reliability" type="range" min="50" max="99" step="1" value="85" />
+              <output for="reliability" id="reliabilityOut">85%</output>
+            </label>
+            <label>
+              Serviciabilidad inicial Pi
+              <input id="initialPsi" type="number" min="3.5" max="4.5" step="0.05" value="4.00" />
+            </label>
+            <label>
+              Serviciabilidad terminal Pt
+              <input id="terminalPsi" type="number" min="1.5" max="3.2" step="0.05" value="2.50" />
+            </label>
+            <label>
+              Periodo de analisis (anos)
+              <input id="designYears" type="range" min="5" max="35" step="1" value="20" />
+              <output for="designYears" id="designYearsOut">20 anos</output>
+            </label>
+          </form>
+        </aside>
+
+        <section class="stage">
+          <section class="hero-lab">
+            <div class="hero-copy">
+              <p>Simulador técnico de deterioro</p>
+              <h2 id="heroTitle">Análisis por ejes equivalentes y serviciabilidad</h2>
+              <span class="stage-lede" id="heroLede">Explora cómo tránsito, drenaje, estructura y confiabilidad modifican la vida útil del pavimento flexible.</span>
+              <div class="header-badges" aria-label="Contexto del modelo">
+                <span><svg class="ui-icon"><use href="#icon-check"></use></svg>MTC / CE.010</span>
+                <span><svg class="ui-icon"><use href="#icon-chart"></use></svg>AASHTO 1993</span>
+                <span><svg class="ui-icon"><use href="#icon-road"></use></svg>EE carril diseño</span>
+              </div>
+            </div>
+            <div class="hero-summary" aria-label="Resumen actual">
+              <article>
+                <span>Condición</span>
+                <strong id="conditionBadge">Excelente</strong>
+              </article>
+              <article>
+                <span>PSI</span>
+                <strong id="psiNow">4.20</strong>
+              </article>
+              <article>
+                <span>Vida</span>
+                <strong id="damageNow">0%</strong>
+              </article>
+            </div>
+          </section>
+
+          <section class="simulation-deck">
+            <div class="road-wrap">
+              <canvas id="roadCanvas" width="1100" height="560" aria-label="Visualizacion de deterioro del pavimento"></canvas>
+              <div class="canvas-caption">
+                <span>Lectura rápida</span>
+                <strong id="quickRead">El pavimento está iniciando su vida útil.</strong>
+              </div>
+            </div>
+
+            <aside class="lab-panel" aria-label="Panel didactico de simulacion">
+              <section class="toolbar" aria-label="Controles de reproduccion">
+                <button class="icon-button" id="playPause" type="button" aria-label="Reproducir simulacion" aria-pressed="false">
+                  <span id="playIcon">&gt;</span>
+                </button>
+                <button class="icon-button" id="reset" type="button" aria-label="Reiniciar simulacion">
+                  <svg class="ui-icon"><use href="#icon-reset"></use></svg>
+                </button>
+                <button class="report-button" id="exportReport" type="button">
+                  <svg class="ui-icon"><use href="#icon-report"></use></svg>
+                  <span>Reporte</span>
+                </button>
+                <label class="time-slider">
+                  <span>Tiempo de análisis</span>
+                  <input id="time" type="range" min="0" max="35" step="0.1" value="0" />
+                  <strong id="timeOut">0.0 anos</strong>
+                </label>
+              </section>
+
+              <section class="compliance-card" id="complianceCard" aria-label="Semaforo tecnico de cumplimiento">
+                <svg class="compliance-icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
+                <div>
+                  <span>Semáforo técnico</span>
+                  <strong id="complianceTitle">Evaluando sección</strong>
+                </div>
+                <p id="complianceDetail">Compara EE admisible, EE de diseño y serviciabilidad terminal.</p>
+                <div class="compliance-checks">
+                  <span id="capacityCheck">EE admisible >= EE diseno</span>
+                  <span id="psiCheck">PSI final >= Pt</span>
+                </div>
+              </section>
+
+              <section class="status-panel">
+                <div>
+                  <span>Siguiente acción didáctica</span>
+                  <strong id="nextStep">Aumenta el tiempo o reproduce la simulación.</strong>
+                </div>
+              </section>
+            </aside>
+          </section>
+
+          <div class="metrics">
+            <article>
+              <svg class="metric-icon"><use href="#icon-road"></use></svg>
+              <span id="metricEsalLabel">EE acumulados</span>
+              <strong id="esalNow">0</strong>
+            </article>
+            <article>
+              <svg class="metric-icon"><use href="#icon-ruler"></use></svg>
+              <span id="metricStructureLabel">Número estructural SN</span>
+              <strong id="snNow">2.98</strong>
+            </article>
+            <article>
+              <svg class="metric-icon"><use href="#icon-traffic"></use></svg>
+              <span>EE de diseño</span>
+              <strong id="designEsalNow">0</strong>
+            </article>
+            <article>
+              <svg class="metric-icon"><use href="#icon-layers"></use></svg>
+              <span id="metricCapacityLabel">EE admisible estructura</span>
+              <strong id="capacityEsalNow">0</strong>
+            </article>
+          </div>
+
+          <section class="learning-strip" aria-label="Flujo didactico del simulador">
+            <article>
+              <svg class="ui-icon"><use href="#icon-traffic"></use></svg>
+              <div>
+                <span>1. Configura</span>
+                <strong>Tránsito, norma y estructura</strong>
+              </div>
+            </article>
+            <article>
+              <svg class="ui-icon"><use href="#icon-road"></use></svg>
+              <div>
+                <span>2. Simula</span>
+                <strong>Avance anual del deterioro</strong>
+              </div>
+            </article>
+            <article>
+              <svg class="ui-icon"><use href="#icon-chart"></use></svg>
+              <div>
+                <span>3. Evalúa</span>
+                <strong>EE, PSI y cumplimiento</strong>
+              </div>
+            </article>
+          </section>
+
+          <div class="analysis-grid">
+            <section class="chart-card layer-card">
+              <div class="card-title">
+                <h2>Corte estructural</h2>
+                <span id="totalDepthLabel">43.0 cm</span>
+              </div>
+              <div class="layer-visual" aria-label="Capas del pavimento">
+                <div class="layer asphalt-layer" id="asphaltLayer"><span id="asphaltLayerName">Carpeta asfaltica</span><strong id="asphaltLayerValue">8.0 cm</strong></div>
+                <div class="layer base-layer" id="baseLayer"><span id="baseLayerName">Base granular</span><strong id="baseLayerValue">20.0 cm</strong></div>
+                <div class="layer subbase-layer" id="subbaseLayer"><span id="subbaseLayerName">Subbase</span><strong id="subbaseLayerValue">15.0 cm</strong></div>
+                <div class="layer subgrade-layer"><span>Subrasante</span><strong id="subgradeLayerValue">CBR 8.0%</strong></div>
+              </div>
+            </section>
+            <section class="chart-card compare-card">
+              <div class="card-title">
+                <h2>Comparacion A/B</h2>
+                <span id="compareStatus">Guarda dos escenarios</span>
+              </div>
+              <div class="compare-actions">
+                <button type="button" id="saveScenarioA">Guardar A</button>
+                <button type="button" id="saveScenarioB">Guardar B</button>
+              </div>
+              <div class="compare-grid">
+                <div>
+                  <span>Escenario A</span>
+                  <strong id="scenarioAResult">Sin guardar</strong>
+                </div>
+                <div>
+                  <span>Escenario B</span>
+                  <strong id="scenarioBResult">Sin guardar</strong>
+                </div>
+              </div>
+              <p id="compareSummary">Ajusta parametros, guarda A y luego guarda B para comparar vida, SN y cumplimiento.</p>
+            </section>
+            <section class="chart-card">
+              <div class="card-title">
+                <h2>Consumo de vida</h2>
+                <span id="failureYear">Vida estimada: --</span>
+              </div>
+              <canvas id="chartCanvas" width="820" height="260" aria-label="Grafica de consumo de vida"></canvas>
+            </section>
+            <section class="chart-card">
+              <div class="card-title">
+                <h2>Serviciabilidad PSI</h2>
+                <span id="psiLimitLabel">Limite Pt: 2.50</span>
+              </div>
+              <canvas id="psiCanvas" width="820" height="260" aria-label="Grafica de serviciabilidad PSI"></canvas>
+            </section>
+            <section class="explain-card">
+              <h2>Calculo EE paso a paso</h2>
+              <div class="calc-steps" id="esalSteps">
+                <p>Selecciona el enfoque de transito para ver el calculo.</p>
+              </div>
+            </section>
+            <section class="explain-card">
+              <h2>Como presentarlo paso a paso</h2>
+              <ol class="steps">
+                <li>Primero fija el trafico: IMDA, porcentaje de pesados y factor camion.</li>
+                <li>Luego ajusta la estructura: espesores, coeficientes y CBR de subrasante.</li>
+                <li>Presiona reproducir o mueve el tiempo para acumular ESAL con los anos.</li>
+                <li>Observa la via: fisuras, ahuellamiento y baches aparecen cuando sube el dano.</li>
+                <li>Compara las graficas: si el consumo llega a 100% o el PSI baja a 2.5, el pavimento falla.</li>
+              </ol>
+            </section>
+            <section class="explain-card">
+              <h2>Modelo usado</h2>
+              <p>
+                La demo estima ESAL por trafico pesado y factor camion. La capacidad se aproxima con una curva tipo
+                AASHTO 1993 usando numero estructural, modulo resiliente estimado desde CBR, serviciabilidad,
+                confiabilidad y drenaje. Para carreteras aplica criterios del Manual MTC; para vias urbanas aplica
+                CE.010 del RNE. Es una herramienta didactica, no reemplaza un diseno definitivo.
+              </p>
+              <div class="formula">
+                ESAL = IMDA x %pesados x FC x 365 x Fd x Fcarril x crecimiento
+              </div>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
