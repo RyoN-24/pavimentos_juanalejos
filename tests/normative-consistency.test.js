@@ -1,0 +1,73 @@
+const fs = require("node:fs");
+const assert = require("node:assert/strict");
+const vm = require("node:vm");
+
+const script = fs.readFileSync("script.js", "utf8");
+const html = fs.readFileSync("index.html", "utf8");
+
+function expectPattern(pattern, message) {
+  assert.match(script, pattern, message);
+}
+
+expectPattern(/mtcCatalogMaxEsal:\s*30_000_000/, "Debe conservar el limite MTC de 30 M EE.");
+expectPattern(/mtcPavedMinEsal:\s*75_001/, "Debe distinguir valores menores al rango TP0 pavimentado.");
+expectPattern(/urbanRoadEsalRanges:\s*\[[\s\S]*id:\s*"urbanDevelopment"[\s\S]*maxEsal:\s*300_000/, "Debe conservar rango de vias Habilitacion urbana 0 a 300 mil EE.");
+expectPattern(/id:\s*"local"[\s\S]*minEsal:\s*300_001[\s\S]*maxEsal:\s*840_000/, "Debe conservar rango de vias Local 300 mil a 840 mil EE.");
+expectPattern(/id:\s*"collector"[\s\S]*minEsal:\s*840_001[\s\S]*maxEsal:\s*3_000_000/, "Debe conservar rango de vias Colectora 840 mil a 3.0 M EE.");
+expectPattern(/id:\s*"arterialMinor"[\s\S]*minEsal:\s*3_000_001[\s\S]*maxEsal:\s*8_300_000/, "Debe conservar rango de vias Arteria menor 3.0 M a 8.3 M EE.");
+expectPattern(/id:\s*"arterialMajor"[\s\S]*minEsal:\s*8_300_001[\s\S]*maxEsal:\s*28_400_000/, "Debe conservar rango de vias Arteria mayor 8.3 M a 28.4 M EE.");
+expectPattern(/id:\s*"express"[\s\S]*minEsal:\s*28_400_001[\s\S]*maxEsal:\s*Infinity/, "Debe conservar rango de vias Expresa mayor a 28.4 M EE.");
+expectPattern(/express:\s*\{\s*label:\s*"Via expresa",\s*designEal:\s*28_400_000,\s*reliability:\s*90\s*\}/, "CE.010 Anexo F debe usar 28.4 M EAL y 90% para expresas.");
+expectPattern(/arterialMajor:\s*\{\s*label:\s*"Via arterial mayor",\s*designEal:\s*8_300_000,\s*reliability:\s*85\s*\}/, "CE.010 Anexo F debe usar 8.3 M EAL y 85% para arteriales.");
+expectPattern(/collector:\s*\{\s*label:\s*"Via colectora",\s*designEal:\s*3_000_000,\s*reliability:\s*80\s*\}/, "CE.010 Anexo F debe usar 3.0 M EAL y 80% para colectoras.");
+expectPattern(/local:\s*\{\s*label:\s*"Via local \/ estacionamiento",\s*designEal:\s*840_000,\s*reliability:\s*75\s*\}/, "CE.010 Anexo F debe usar 0.84 M EAL y 75% para locales.");
+expectPattern(/hotFlexible:[\s\S]*defaults:\s*\{\s*a1:\s*0\.17,\s*a2:\s*0\.052,\s*a3:\s*0\.047/, "Los defaults flexibles deben reflejar coeficientes granulares MTC.");
+expectPattern(/coldMixMaxEsal:\s*1_000_000/, "Debe conservar limite MTC para mezcla fria.");
+expectPattern(/surfaceTreatmentMaxEsal:\s*500_000/, "Debe conservar limite MTC para tratamiento superficial bicapa.");
+expectPattern(/urbanRangeNow:\s*\$\("urbanRangeNow"\)/, "Debe existir lectura visible para rango EE de via urbana.");
+expectPattern(/recommendedUrbanClass:\s*\$\("recommendedUrbanClass"\)/, "Debe existir lectura visible para tipo recomendado por EE.");
+expectPattern(/EE admisible estructura/, "La UI debe distinguir EE admisible estructura del rango urbano.");
+assert.match(html, /Rangos de vias urbanas/, "La interfaz debe mantener la tabla de rangos de vias.");
+assert.match(html, /Cuadro resumen/, "La interfaz debe presentar un cuadro resumen compacto.");
+assert.match(html, /Resumen de criterios de ejes equivalentes/, "La interfaz debe tener resumen compacto de criterios.");
+assert.match(html, /Tipo recomendado por EE/, "La interfaz debe mostrar el tipo recomendado por EE.");
+assert.match(html, /Los rangos de vias clasifican la demanda/, "La interfaz debe explicar diferencia entre rango de vias y EE admisible estructura.");
+expectPattern(/el rango urbano clasifica el tipo de via por demanda; el EE admisible estructura verifica la capacidad/, "El reporte debe explicar diferencia entre rango urbano y capacidad estructural.");
+expectPattern(/Rangos de vias/, "El reporte debe incluir la tabla de rangos de vias.");
+expectPattern(/Diagnostico/, "El reporte debe incluir diagnostico de clasificacion, capacidad y serviciabilidad.");
+expectPattern(/Capacidad estructural: cumple/, "El reporte debe explicar cumplimiento estructural en lenguaje directo.");
+const legacyCasePattern = new RegExp(["profe" + "sor", "Santa " + "Rosa", "Caso " + "aplicado", "caso " + "real"].join("|"), "i");
+assert.doesNotMatch(`${html}\n${script}`, legacyCasePattern, "La interfaz y la logica visible deben quedar generales.");
+
+const testableScript = `${script.split('document.querySelectorAll(".tab")')[0]}
+globalThis.__normativeTest = { urbanClassByEsal, formatRange };
+`;
+const fakeElement = {
+  value: "0",
+  classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } },
+  dataset: {},
+  style: {},
+  textContent: "",
+  innerHTML: "",
+  setAttribute() {},
+  addEventListener() {},
+  getContext() { return {}; },
+};
+const context = {
+  document: { getElementById() { return fakeElement; } },
+  performance: { now() { return 0; } },
+};
+vm.runInNewContext(testableScript, context);
+
+[
+  [250_000, "urbanDevelopment"],
+  [500_000, "local"],
+  [2_000_000, "collector"],
+  [5_000_000, "arterialMinor"],
+  [12_000_000, "arterialMajor"],
+  [46_100_000, "express"],
+].forEach(([esal, expected]) => {
+  assert.equal(context.__normativeTest.urbanClassByEsal(esal).id, expected, `EE ${esal} debe clasificar como ${expected}.`);
+});
+
+console.log("Normative consistency checks passed.");

@@ -57,6 +57,7 @@ const outputs = {
   psiNow: $("psiNow"),
   snNow: $("snNow"),
   designEsalNow: $("designEsalNow"),
+  urbanRangeNow: $("urbanRangeNow"),
   capacityEsalNow: $("capacityEsalNow"),
   failureYear: $("failureYear"),
   conditionBadge: $("conditionBadge"),
@@ -64,11 +65,13 @@ const outputs = {
   nextStep: $("nextStep"),
   normName: $("normName"),
   normValues: $("normValues"),
+  recommendedUrbanClass: $("recommendedUrbanClass"),
   psiLimitLabel: $("psiLimitLabel"),
   complianceTitle: $("complianceTitle"),
   complianceDetail: $("complianceDetail"),
   capacityCheck: $("capacityCheck"),
   psiCheck: $("psiCheck"),
+  normativeCheck: $("normativeCheck"),
   totalDepthLabel: $("totalDepthLabel"),
   asphaltLayerValue: $("asphaltLayerValue"),
   asphaltLayerName: $("asphaltLayerName"),
@@ -94,6 +97,7 @@ const playPause = $("playPause");
 const playIcon = $("playIcon");
 const resetButton = $("reset");
 const urbanClassWrap = $("urbanClassWrap");
+const urbanRecommendation = $("urbanRecommendation");
 const directEsalWrap = $("directEsalWrap");
 const coldSettings = $("coldSettings");
 const rigidSettings = $("rigidSettings");
@@ -106,7 +110,7 @@ const subbaseLayer = $("subbaseLayer");
 const saveScenarioA = $("saveScenarioA");
 const saveScenarioB = $("saveScenarioB");
 const exportReport = $("exportReport");
-const loadSantaRosaCase = $("loadSantaRosaCase");
+const loadBaseExample = $("loadBaseExample");
 
 let playing = false;
 let lastFrame = performance.now();
@@ -117,19 +121,19 @@ let playbackTimer = null;
 let lastPavementType = null;
 let activeCaseStudy = null;
 
-const santaRosaCase = {
-  name: "Caso real: Av. Santa Rosa",
-  source: "Estudio de Trafico Av. Santa Rosa (2018)",
-  station: "E6 Av. Argentina - Av. Morales Duarez",
-  scenario: "Escenario 2 con proyecto, con presion de llantas, sentido NS, ano 2042",
-  imda: 91033,
-  heavyShare: 4.7,
+const baseExample = {
+  name: "Ejemplo urbano general",
+  source: "Datos referenciales editables",
+  station: "Tramo urbano de ejemplo",
+  scenario: "Clasificacion por rango de vias y verificacion estructural",
+  imda: 15000,
+  heavyShare: 12,
   truckFactor: 1.44,
-  designEsal: 46_100_000,
+  designEsal: 5_000_000,
   asphaltDepth: 8,
   baseDepth: 50,
   subbaseDepth: 40,
-  note: "Caso Av. Santa Rosa: E6 Av. Argentina - Av. Morales Duarez, IMDA 91,033 veh/dia, pesados 4.7%, ESAL diseno 46.1 M. Paquete experimental: 8 cm carpeta, 50 cm base y 40 cm subbase.",
+  note: "Ejemplo urbano general: EE de diseno 5.0 M, clasificacion Arteria menor. Ajusta IMDA, pesados, factor vehiculo y estructura para representar cualquier proyecto.",
 };
 
 const pavementModes = {
@@ -143,7 +147,7 @@ const pavementModes = {
     metricStructure: "Número estructural SN",
     metricCapacity: "EE admisible estructura",
     layerNames: ["Carpeta asfáltica", "Base granular", "Subbase"],
-    defaults: { a1: 0.17, a2: 0.055, a3: 0.043, surface: 8, base: 50, subbase: 40, years: 20 },
+    defaults: { a1: 0.17, a2: 0.052, a3: 0.047, surface: 8, base: 50, subbase: 40, years: 20 },
     capacityFactor: 1,
   },
   coldFlexible: {
@@ -154,9 +158,9 @@ const pavementModes = {
     surfaceLabel: "5. Espesor de mezcla fría o tratamiento, D1",
     baseLabel: "6. Espesor de base granular, D2",
     metricStructure: "SN equivalente",
-    metricCapacity: "EE admisible solución fría",
+    metricCapacity: "EE admisible estructura",
     layerNames: ["Mezcla fría / TSB", "Base granular", "Subbase"],
-    defaults: { a1: 0.125, a2: 0.052, a3: 0.043, surface: 5, base: 22, subbase: 18, years: 10 },
+    defaults: { a1: 0.125, a2: 0.052, a3: 0.047, surface: 5, base: 22, subbase: 18, years: 10 },
     capacityFactor: 0.82,
   },
   rigid: {
@@ -167,7 +171,7 @@ const pavementModes = {
     surfaceLabel: "5. Espesor de losa de concreto, D",
     baseLabel: "6. Espesor de base o subbase de apoyo",
     metricStructure: "Índice losa equivalente",
-    metricCapacity: "EE admisible losa",
+    metricCapacity: "EE admisible estructura",
     layerNames: ["Losa de concreto", "Base / subbase de apoyo", "Subbase granular"],
     defaults: { a1: 0.22, a2: 0.045, a3: 0.035, surface: 20, base: 15, subbase: 10, years: 20 },
     capacityFactor: 1.55,
@@ -180,10 +184,62 @@ const pavementModes = {
     surfaceLabel: "5. Espesor de adoquín + cama de arena",
     baseLabel: "6. Espesor de base granular o tratada",
     metricStructure: "Índice de trabazón",
-    metricCapacity: "EE admisible adoquinado",
+    metricCapacity: "EE admisible estructura",
     layerNames: ["Adoquines + arena", "Base granular/tratada", "Subbase"],
     defaults: { a1: 0.16, a2: 0.052, a3: 0.04, surface: 10, base: 20, subbase: 15, years: 20 },
     capacityFactor: 0.95,
+  },
+};
+
+const normativeData = {
+  mtcTrafficClasses: [
+    { id: "TP0", minEsal: 75001, maxEsal: 150000, reliability: 65, pi: 3.8, pt: 2.0 },
+    { id: "TP1", minEsal: 150001, maxEsal: 300000, reliability: 70, pi: 3.8, pt: 2.0 },
+    { id: "TP2", minEsal: 300001, maxEsal: 500000, reliability: 75, pi: 3.8, pt: 2.0 },
+    { id: "TP3", minEsal: 500001, maxEsal: 750000, reliability: 80, pi: 3.8, pt: 2.0 },
+    { id: "TP4", minEsal: 750001, maxEsal: 1000000, reliability: 80, pi: 3.8, pt: 2.0 },
+    { id: "TP5", minEsal: 1000001, maxEsal: 1500000, reliability: 85, pi: 4.0, pt: 2.5 },
+    { id: "TP6", minEsal: 1500001, maxEsal: 3000000, reliability: 85, pi: 4.0, pt: 2.5 },
+    { id: "TP7", minEsal: 3000001, maxEsal: 5000000, reliability: 85, pi: 4.0, pt: 2.5 },
+    { id: "TP8", minEsal: 5000001, maxEsal: 7500000, reliability: 90, pi: 4.0, pt: 2.5 },
+    { id: "TP9", minEsal: 7500001, maxEsal: 10000000, reliability: 90, pi: 4.0, pt: 2.5 },
+    { id: "TP10", minEsal: 10000001, maxEsal: 12500000, reliability: 90, pi: 4.0, pt: 2.5 },
+    { id: "TP11", minEsal: 12500001, maxEsal: 15000000, reliability: 90, pi: 4.0, pt: 2.5 },
+    { id: "TP12", minEsal: 15000001, maxEsal: 20000000, reliability: 95, pi: 4.2, pt: 3.0 },
+    { id: "TP13", minEsal: 20000001, maxEsal: 25000000, reliability: 95, pi: 4.2, pt: 3.0 },
+    { id: "TP14", minEsal: 25000001, maxEsal: 30000000, reliability: 95, pi: 4.2, pt: 3.0 },
+    { id: "TP15", minEsal: 30000001, maxEsal: Infinity, reliability: 95, pi: 4.2, pt: 3.0 },
+  ],
+  ce010PaverDesignEals: {
+    express: { label: "Via expresa", designEal: 28_400_000, reliability: 90 },
+    arterialMajor: { label: "Via arterial mayor", designEal: 8_300_000, reliability: 85 },
+    arterialMinor: { label: "Via arterial menor", designEal: 8_300_000, reliability: 85 },
+    collector: { label: "Via colectora", designEal: 3_000_000, reliability: 80 },
+    local: { label: "Via local / estacionamiento", designEal: 840_000, reliability: 75 },
+    urbanDevelopment: { label: "Habilitacion urbana", designEal: 300_000, reliability: 75 },
+  },
+  urbanReferenceDefaults: {
+    express: { label: "Via expresa", reliability: 90, pi: 4.2, pt: 3.0, asphaltMin: 8 },
+    arterialMajor: { label: "Via arterial mayor", reliability: 85, pi: 4.0, pt: 2.5, asphaltMin: 8 },
+    arterialMinor: { label: "Via arterial menor", reliability: 85, pi: 4.0, pt: 2.5, asphaltMin: 7 },
+    collector: { label: "Via colectora", reliability: 80, pi: 4.0, pt: 2.5, asphaltMin: 6 },
+    local: { label: "Via local", reliability: 75, pi: 3.8, pt: 2.0, asphaltMin: 5 },
+    urbanDevelopment: { label: "Habilitacion urbana", reliability: 75, pi: 3.8, pt: 2.0, asphaltMin: 5 },
+  },
+  urbanRoadEsalRanges: [
+    { id: "urbanDevelopment", label: "Habilitacion urbana", minEsal: 0, maxEsal: 300_000 },
+    { id: "local", label: "Local", minEsal: 300_001, maxEsal: 840_000 },
+    { id: "collector", label: "Colectora", minEsal: 840_001, maxEsal: 3_000_000 },
+    { id: "arterialMinor", label: "Arteria menor", minEsal: 3_000_001, maxEsal: 8_300_000 },
+    { id: "arterialMajor", label: "Arteria mayor", minEsal: 8_300_001, maxEsal: 28_400_000 },
+    { id: "express", label: "Expresa", minEsal: 28_400_001, maxEsal: Infinity },
+  ],
+  limits: {
+    mtcCatalogMaxEsal: 30_000_000,
+    mtcPavedMinEsal: 75_001,
+    coldMixMaxEsal: 1_000_000,
+    surfaceTreatmentMaxEsal: 500_000,
+    rigidJ40MaxEsal: 1_000_000,
   },
 };
 
@@ -230,6 +286,7 @@ function updateModeControls() {
   coldSettings.classList.toggle("hidden", fields.pavementType.value !== "coldFlexible");
   rigidSettings.classList.toggle("hidden", fields.pavementType.value !== "rigid");
   paverSettings.classList.toggle("hidden", fields.pavementType.value !== "pavers");
+  urbanRecommendation.classList.toggle("hidden", fields.projectType.value !== "urban");
 }
 
 function applyPavementModeDefaults(force = false) {
@@ -323,35 +380,72 @@ function modeSpecificFactor() {
 }
 
 function roadTrafficClass(esal) {
-  const classes = [
-    ["TP0", 75000, 150000, 65, 3.8, 2.0],
-    ["TP1", 150001, 300000, 70, 3.8, 2.0],
-    ["TP2", 300001, 500000, 75, 3.8, 2.0],
-    ["TP3", 500001, 750000, 80, 3.8, 2.0],
-    ["TP4", 750001, 1000000, 80, 3.8, 2.0],
-    ["TP5", 1000001, 1500000, 85, 4.0, 2.5],
-    ["TP6", 1500001, 3000000, 85, 4.0, 2.5],
-    ["TP7", 3000001, 5000000, 85, 4.0, 2.5],
-    ["TP8", 5000001, 7500000, 90, 4.0, 2.5],
-    ["TP9", 7500001, 10000000, 90, 4.0, 2.5],
-    ["TP10", 10000001, 12500000, 90, 4.0, 2.5],
-    ["TP11", 12500001, 15000000, 90, 4.0, 2.5],
-    ["TP12", 15000001, 20000000, 95, 4.2, 3.0],
-    ["TP13", 20000001, 25000000, 95, 4.2, 3.0],
-    ["TP14", 25000001, 30000000, 95, 4.2, 3.0],
-    ["TP15", 30000001, Infinity, 95, 4.2, 3.0],
-  ];
-  return classes.find((item) => esal <= item[2]) || classes[classes.length - 1];
+  if (esal < normativeData.limits.mtcPavedMinEsal) {
+    return {
+      id: "Menor a TP0",
+      minEsal: 0,
+      maxEsal: normativeData.limits.mtcPavedMinEsal - 1,
+      reliability: 65,
+      pi: 3.8,
+      pt: 2.0,
+      outOfCatalog: true,
+    };
+  }
+  return (
+    normativeData.mtcTrafficClasses.find((item) => esal >= item.minEsal && esal <= item.maxEsal) ||
+    normativeData.mtcTrafficClasses[normativeData.mtcTrafficClasses.length - 1]
+  );
+}
+
+function urbanClassByEsal(esal) {
+  return (
+    normativeData.urbanRoadEsalRanges.find((item) => esal >= item.minEsal && esal <= item.maxEsal) ||
+    normativeData.urbanRoadEsalRanges[normativeData.urbanRoadEsalRanges.length - 1]
+  );
+}
+
+function urbanRangeStatus() {
+  if (fields.projectType.value !== "urban") {
+    return { applies: false, inRange: true, selected: null, recommended: null };
+  }
+  const selected = normativeData.urbanRoadEsalRanges.find((item) => item.id === fields.urbanClass.value);
+  const recommended = urbanClassByEsal(designLaneEsal());
+  return {
+    applies: true,
+    inRange: Boolean(selected && recommended.id === selected.id),
+    selected,
+    recommended,
+  };
+}
+
+function formatRange(minEsal, maxEsal) {
+  if (maxEsal === Infinity) return `mayor a ${formatLarge(minEsal - 1)}`;
+  return `${formatLarge(minEsal)} a ${formatLarge(maxEsal)}`;
 }
 
 function urbanNormValues() {
-  const values = {
-    express: { label: "Via expresa", reliability: 95, pi: 4.2, pt: 3.0, asphaltMin: 8 },
-    arterial: { label: "Via arterial", reliability: 90, pi: 4.0, pt: 2.5, asphaltMin: 7 },
-    collector: { label: "Via colectora", reliability: 85, pi: 4.0, pt: 2.5, asphaltMin: 6 },
-    local: { label: "Via local / estacionamiento", reliability: 75, pi: 3.8, pt: 2.0, asphaltMin: 5 },
+  const urbanClass = fields.urbanClass.value;
+  const reference = normativeData.urbanReferenceDefaults[urbanClass];
+  const paver = normativeData.ce010PaverDesignEals[urbanClass];
+  const roadRange = normativeData.urbanRoadEsalRanges.find((item) => item.id === urbanClass);
+  if (fields.pavementType.value === "pavers") {
+    return {
+      ...reference,
+      reliability: paver.reliability,
+      pt: 2.0,
+      designEal: paver.designEal,
+      roadRange,
+      source: "CE.010 Anexo F Tabla F2",
+      scope: "adoquines",
+    };
+  }
+  return {
+    ...reference,
+    designEal: null,
+    roadRange,
+    source: fields.pavementType.value === "rigid" ? "CE.010 Anexo D usa ADTT y tablas PCA" : "Referencia tecnica con rangos de vias y verificacion estructural",
+    scope: fields.pavementType.value === "rigid" ? "concreto urbano" : "flexible urbano",
   };
-  return values[fields.urbanClass.value];
 }
 
 function applyPeruvianNorms() {
@@ -371,12 +465,11 @@ function applyPeruvianNorms() {
     }
   } else {
     const designEsal = designLaneEsal();
-    const [trafficClass, minEsal, maxEsal, reliability, pi, pt] = roadTrafficClass(designEsal);
-    fields.reliability.value = String(reliability);
-    fields.initialPsi.value = pi.toFixed(2);
-    fields.terminalPsi.value = pt.toFixed(2);
-    void minEsal;
-    fields.projectType.dataset.trafficClass = trafficClass;
+    const trafficClass = roadTrafficClass(designEsal);
+    fields.reliability.value = String(trafficClass.reliability);
+    fields.initialPsi.value = trafficClass.pi.toFixed(2);
+    fields.terminalPsi.value = trafficClass.pt.toFixed(2);
+    fields.projectType.dataset.trafficClass = trafficClass.id;
   }
 
   applyingNorm = false;
@@ -483,14 +576,106 @@ function finalState() {
   return simulationState(value("designYears"));
 }
 
+function normativeWarnings() {
+  const warnings = [];
+  const designEsal = designLaneEsal();
+  const limits = normativeData.limits;
+
+  if (fields.projectType.value === "road" && designEsal < limits.mtcPavedMinEsal) {
+    warnings.push({
+      level: "warn",
+      text: "EE menor al rango TP0 MTC para caminos pavimentados.",
+    });
+  }
+
+  if (fields.projectType.value === "road" && designEsal > limits.mtcCatalogMaxEsal) {
+    warnings.push({
+      level: "block",
+      text: "EE > 30 M: MTC exige estudio especifico fuera de catalogo.",
+    });
+  }
+
+  if (fields.pavementType.value === "coldFlexible") {
+    const maxEsal =
+      fields.coldSurfaceType.value === "surfaceTreatment" ? limits.surfaceTreatmentMaxEsal : limits.coldMixMaxEsal;
+    const label =
+      fields.coldSurfaceType.value === "surfaceTreatment"
+        ? "Tratamiento superficial bicapa recomendado hasta 500 mil EE."
+        : "Mezcla asfaltica en frio recomendada hasta 1.00 M EE.";
+    if (designEsal > maxEsal) {
+      warnings.push({ level: "block", text: label });
+    }
+  }
+
+  if (fields.pavementType.value === "rigid" && fields.rigidLoadTransfer.value === "4.0" && designEsal > limits.rigidJ40MaxEsal) {
+    warnings.push({
+      level: "block",
+      text: "J=4.0 sin pasadores solo hasta 1.00 M EE.",
+    });
+  }
+
+  if (fields.projectType.value === "urban") {
+    const norm = urbanNormValues();
+    const rangeStatus = urbanRangeStatus();
+    const selectedRange = rangeStatus.selected;
+    const recommendedRange = rangeStatus.recommended;
+    if (designEsal > limits.mtcCatalogMaxEsal) {
+      warnings.push({
+        level: "warn",
+        text: "EE > 30 M: en urbano queda como expresa por rango de vias; sustentar aparte si se usa catalogo MTC.",
+      });
+    }
+    if (selectedRange && recommendedRange && !rangeStatus.inRange) {
+      warnings.push({
+        level: "block",
+        text: `Por EE corresponde ${recommendedRange.label} (${formatRange(recommendedRange.minEsal, recommendedRange.maxEsal)}), no ${selectedRange.label}.`,
+      });
+    }
+    if (fields.pavementType.value === "pavers" && norm.designEal && designEsal > norm.designEal) {
+      warnings.push({
+        level: "warn",
+        text: `CE.010 Anexo F supera EAL de diseno para ${norm.label.toLowerCase()}: ${formatLarge(norm.designEal)}.`,
+      });
+    }
+    if (fields.pavementType.value === "rigid") {
+      warnings.push({
+        level: "note",
+        text: "CE.010 rigido urbano se verifica con ADTT y tablas PCA, no solo EE.",
+      });
+    }
+    if (fields.pavementType.value === "hotFlexible" || fields.pavementType.value === "coldFlexible") {
+      warnings.push({
+        level: "note",
+        text: "En pavimento flexible urbano, el rango de via clasifica demanda y la capacidad se estima con modelo estructural tipo AASHTO.",
+      });
+    }
+  }
+
+  return warnings;
+}
+
 function complianceStatus() {
   const final = finalState();
   const capacityOk = final.capacity >= designLaneEsal();
   const psiOk = final.psi >= value("terminalPsi");
   const damageOk = final.damage <= 1;
-  const rigidJLimitOk = fields.pavementType.value !== "rigid" || fields.rigidLoadTransfer.value !== "4.0" || designLaneEsal() <= 1_000_000;
-  const pass = capacityOk && psiOk && damageOk && rigidJLimitOk;
-  const close = final.damage <= 1.1 && final.psi >= value("terminalPsi") - 0.15 && rigidJLimitOk;
+  const warnings = normativeWarnings();
+  const blockingWarnings = warnings.filter((warning) => warning.level === "block");
+  const rigidJLimitOk = !warnings.some((warning) => warning.text.startsWith("J=4.0"));
+  const normativeOk = blockingWarnings.length === 0;
+  const close = final.damage <= 1.1 && final.psi >= value("terminalPsi") - 0.15 && normativeOk;
+  const level =
+    capacityOk && psiOk && damageOk && normativeOk
+      ? "pass"
+      : close
+        ? "warn"
+        : "fail";
+  const title =
+    level === "pass"
+      ? "Cumple"
+      : close
+        ? "Al limite"
+        : "No cumple";
 
   return {
     final,
@@ -498,8 +683,11 @@ function complianceStatus() {
     psiOk,
     damageOk,
     rigidJLimitOk,
-    level: pass ? "pass" : close ? "warn" : "fail",
-    title: pass ? "Cumple" : close ? "Al limite" : "No cumple",
+    normativeOk,
+    warnings,
+    blockingWarnings,
+    level,
+    title,
   };
 }
 
@@ -513,21 +701,70 @@ function formatPercent(valueToFormat) {
   return Number.isInteger(valueToFormat) ? `${valueToFormat}%` : `${valueToFormat.toFixed(1)}%`;
 }
 
-function applySantaRosaCase() {
+function urbanRangeStepText() {
+  const rangeStatus = urbanRangeStatus();
+  if (!rangeStatus.applies || !rangeStatus.selected) {
+    return "Rango EE de via urbana = no aplica";
+  }
+  const selectedText = `${rangeStatus.selected.label}: ${formatRange(rangeStatus.selected.minEsal, rangeStatus.selected.maxEsal)}`;
+  if (rangeStatus.inRange) {
+    return `Rango EE de via urbana = ${selectedText}`;
+  }
+  return `Rango EE de via urbana = ${selectedText}; recomendado por EE: ${rangeStatus.recommended.label}`;
+}
+
+function urbanRangeTableLines() {
+  return normativeData.urbanRoadEsalRanges.map((item) => `${item.label}: ${formatRange(item.minEsal, item.maxEsal)}`);
+}
+
+function diagnosisLines(status) {
+  const rangeStatus = urbanRangeStatus();
+  const observations = status.warnings.filter((warning) => warning.level !== "note");
+  const lines = [
+    status.capacityOk
+      ? "Capacidad estructural: cumple, el EE admisible estructura cubre el EE de diseno."
+      : "Capacidad estructural: no cumple, el EE admisible estructura es menor que el EE de diseno.",
+    status.psiOk
+      ? "Serviciabilidad: cumple, el PSI final queda por encima del Pt."
+      : "Serviciabilidad: no cumple, el PSI final queda por debajo del Pt.",
+  ];
+
+  if (rangeStatus.applies && rangeStatus.selected && rangeStatus.recommended) {
+    lines.unshift(
+      rangeStatus.inRange
+        ? `Clasificacion urbana: cumple, ${rangeStatus.selected.label} corresponde al EE de diseno.`
+        : `Clasificacion urbana: no cumple, corresponde ${rangeStatus.recommended.label} y no ${rangeStatus.selected.label}.`,
+    );
+  }
+
+  if (observations.length) {
+    lines.push(`Observaciones: ${observations.map((warning) => warning.text).join(" | ")}`);
+  }
+
+  return lines;
+}
+
+function technicalNoteLines(status) {
+  return status.warnings
+    .filter((warning) => warning.level === "note")
+    .map((warning) => warning.text);
+}
+
+function applyBaseExample() {
   stopPlayback();
-  activeCaseStudy = santaRosaCase;
+  activeCaseStudy = baseExample;
   fields.pavementType.value = "hotFlexible";
   applyPavementModeDefaults(true);
   fields.projectType.value = "urban";
-  fields.urbanClass.value = "arterial";
+  fields.urbanClass.value = "arterialMinor";
   fields.trafficMode.value = "direct";
-  fields.directDesignEsal.value = String(santaRosaCase.designEsal);
-  fields.aadt.value = String(santaRosaCase.imda);
-  fields.heavyShare.value = String(santaRosaCase.heavyShare);
-  fields.truckFactor.value = String(santaRosaCase.truckFactor);
-  fields.asphaltDepth.value = String(santaRosaCase.asphaltDepth);
-  fields.baseDepth.value = String(santaRosaCase.baseDepth);
-  fields.subbaseDepth.value = String(santaRosaCase.subbaseDepth);
+  fields.directDesignEsal.value = String(baseExample.designEsal);
+  fields.aadt.value = String(baseExample.imda);
+  fields.heavyShare.value = String(baseExample.heavyShare);
+  fields.truckFactor.value = String(baseExample.truckFactor);
+  fields.asphaltDepth.value = String(baseExample.asphaltDepth);
+  fields.baseDepth.value = String(baseExample.baseDepth);
+  fields.subbaseDepth.value = String(baseExample.subbaseDepth);
   fields.designYears.value = "20";
   fields.time.value = "0";
   scenarioA = null;
@@ -612,6 +849,15 @@ function updateOutputs(state) {
   outputs.time.textContent = `${value("time").toFixed(1)} anos`;
   outputs.esalNow.textContent = formatLarge(state.esal);
   outputs.designEsalNow.textContent = formatLarge(designLaneEsal());
+  const rangeStatus = urbanRangeStatus();
+  outputs.urbanRangeNow.textContent =
+    rangeStatus.applies && rangeStatus.selected
+      ? `${rangeStatus.selected.label}: ${formatRange(rangeStatus.selected.minEsal, rangeStatus.selected.maxEsal)}`
+      : "No aplica";
+  outputs.recommendedUrbanClass.textContent =
+    rangeStatus.applies && rangeStatus.recommended
+      ? `${rangeStatus.recommended.label} (${formatRange(rangeStatus.recommended.minEsal, rangeStatus.recommended.maxEsal)})`
+      : "No aplica";
   outputs.capacityEsalNow.textContent = formatLarge(state.capacity);
   outputs.damageNow.textContent = `${Math.round(state.damage * 100)}%`;
   outputs.psiNow.textContent = state.psi.toFixed(2);
@@ -626,12 +872,18 @@ function updateOutputs(state) {
   if (fields.projectType.value === "urban") {
     const norm = urbanNormValues();
     outputs.normName.textContent = `CE.010 Pavimentos Urbanos - ${norm.label}`;
-    outputs.normValues.textContent = `${mode.title}. ${technicalModeSummary()} Pi ${norm.pi.toFixed(2)}, Pt ${norm.pt.toFixed(2)}, R ${norm.reliability}%`;
+    const ealText = norm.designEal ? `EAL diseno ${formatLarge(norm.designEal)}, ` : "";
+    const rangeText = norm.roadRange
+      ? `Rango de via ${formatRange(norm.roadRange.minEsal, norm.roadRange.maxEsal)}. `
+      : "";
+    outputs.normValues.textContent = `${mode.title}. ${rangeText}${norm.source}. ${ealText}Pi ${norm.pi.toFixed(2)}, Pt ${norm.pt.toFixed(2)}, R ${norm.reliability}%`;
   } else {
     const designEsal = designLaneEsal();
-    const [trafficClass, minEsal, maxEsal, reliability, pi, pt] = roadTrafficClass(designEsal);
-    outputs.normName.textContent = `Manual de Carreteras MTC 2014 - ${trafficClass}`;
-    outputs.normValues.textContent = `${technicalModeSummary()} EE ${formatLarge(minEsal)} a ${maxEsal === Infinity ? "mas de 30 M" : formatLarge(maxEsal)}, R ${reliability}%`;
+    const trafficClass = roadTrafficClass(designEsal);
+    outputs.normName.textContent = `Manual de Carreteras MTC 2014 - ${trafficClass.id}`;
+    outputs.normValues.textContent =
+      `${technicalModeSummary()} EE ${formatLarge(trafficClass.minEsal)} a ` +
+      `${trafficClass.maxEsal === Infinity ? "mas de 30 M" : formatLarge(trafficClass.maxEsal)}, R ${trafficClass.reliability}%`;
   }
 
   const failure = findFailureYear();
@@ -650,8 +902,9 @@ function updateEsalSteps() {
       <p>1) EE de diseno ingresado = ${formatLarge(designLaneEsal())}</p>
       <p>2) EE acumulado al ano ${value("time").toFixed(1)} = ${formatLarge(cumulativeEsal(value("time")))}</p>
       <p>3) Modelo activo = ${mode.title}. ${technicalModeSummary()}</p>
-      <p>4) EE admisible por estructura = ${formatLarge(designCapacityEsal())}</p>
-      <p>5) Consumo = EE acumulado / EE admisible = ${(simulationState(value("time")).damage * 100).toFixed(0)}%</p>
+      <p>4) ${urbanRangeStepText()}</p>
+      <p>5) EE admisible estructura = ${formatLarge(designCapacityEsal())}</p>
+      <p>6) Consumo = EE acumulado / EE admisible estructura = ${(simulationState(value("time")).damage * 100).toFixed(0)}%</p>
     `;
     return;
   }
@@ -660,11 +913,12 @@ function updateEsalSteps() {
   const annualEsal = dailyHeavy * value("truckFactor") * 365 * value("directionFactor") * value("laneFactor");
   esalSteps.innerHTML = `
     <p>1) Vehiculos pesados/dia = IMDA x %pesados = ${formatLarge(dailyHeavy)}</p>
-    <p>2) EE anual carril diseno = pesados/dia x FC x 365 x Fd x Fc = ${formatLarge(annualEsal)}</p>
+    <p>2) EE anual carril diseno = pesados/dia x Fv x 365 x Fd x Fc = ${formatLarge(annualEsal)}</p>
     <p>3) Factor crecimiento ${value("designYears")} anos = ${growthFactor(value("growth"), value("designYears")).toFixed(2)}</p>
     <p>4) EE diseno = EE anual x factor crecimiento = ${formatLarge(designLaneEsal())}</p>
     <p>5) Modelo activo = ${mode.title}. ${technicalModeSummary()}</p>
-    <p>6) EE admisible por estructura = ${formatLarge(designCapacityEsal())}</p>
+    <p>6) ${urbanRangeStepText()}</p>
+    <p>7) EE admisible estructura = ${formatLarge(designCapacityEsal())}</p>
   `;
 }
 
@@ -674,20 +928,29 @@ function updateCompliance() {
   complianceCard.classList.add(status.level);
 
   outputs.complianceTitle.textContent = status.title;
+  const rangeStatus = urbanRangeStatus();
+  const rangeText =
+    rangeStatus.applies && rangeStatus.selected
+      ? ` Rango via ${rangeStatus.selected.label}: ${formatRange(rangeStatus.selected.minEsal, rangeStatus.selected.maxEsal)}.`
+      : "";
   outputs.complianceDetail.textContent =
-    `EE admisible ${formatLarge(status.final.capacity)} vs EE diseno ${formatLarge(designLaneEsal())}. ` +
+    `EE admisible estructura ${formatLarge(status.final.capacity)} vs EE diseno ${formatLarge(designLaneEsal())}.${rangeText} ` +
     `PSI final ${status.final.psi.toFixed(2)} vs Pt ${value("terminalPsi").toFixed(2)}.`;
 
   outputs.capacityCheck.textContent = status.capacityOk
-    ? "OK: EE admisible >= EE diseno"
-    : "Revisar: EE admisible < EE diseno";
-  outputs.psiCheck.textContent = !status.rigidJLimitOk
-    ? "Revisar: J=4.0 solo hasta 1.00 M EE"
-    : status.psiOk
+    ? "OK: EE admisible estructura >= EE diseno"
+    : "Revisar: EE admisible estructura < EE diseno";
+  outputs.psiCheck.textContent = status.psiOk
       ? "OK: PSI final >= Pt"
       : "Revisar: PSI final < Pt";
+  outputs.normativeCheck.textContent = status.blockingWarnings.length
+    ? `Fuera de alcance: ${status.blockingWarnings[0].text}`
+    : rangeStatus.applies
+      ? "OK: rango de via compatible"
+      : "OK: alcance normativo verificado";
   outputs.capacityCheck.className = status.capacityOk ? "ok" : "bad";
-  outputs.psiCheck.className = status.psiOk && status.rigidJLimitOk ? "ok" : "bad";
+  outputs.psiCheck.className = status.psiOk ? "ok" : "bad";
+  outputs.normativeCheck.className = status.normativeOk ? "ok" : "bad";
 }
 
 function updateLayerVisual() {
@@ -754,9 +1017,11 @@ function updateComparison() {
 function reportText() {
   const status = complianceStatus();
   const mode = pavementMode();
+  const reportWarnings = status.warnings.filter((warning) => warning.level !== "note");
+  const technicalNotes = technicalNoteLines(status);
   const caseLines = activeCaseStudy
     ? [
-        "Caso aplicado",
+        "Ejemplo aplicado",
         `Nombre: ${activeCaseStudy.name}`,
         `Fuente: ${activeCaseStudy.source}`,
         `Tramo/estacion: ${activeCaseStudy.station}`,
@@ -777,12 +1042,25 @@ function reportText() {
     `Valores normativos: ${outputs.normValues.textContent}`,
     `Criterio tecnico activo: ${technicalModeSummary()}`,
     `Resultado: ${status.title}`,
+    reportWarnings.length ? `Advertencias normativas: ${reportWarnings.map((warning) => warning.text).join(" | ")}` : "",
     "",
     ...caseLines,
+    "Rangos de vias",
+    ...urbanRangeTableLines(),
+    "",
     "Transito y EE",
+    "Lectura: el rango urbano clasifica el tipo de via por demanda; el EE admisible estructura verifica la capacidad del paquete de pavimento.",
     `EE de diseno: ${formatLarge(designLaneEsal())}`,
+    `Rango EE de via urbana: ${urbanRangeStepText().replace("Rango EE de via urbana = ", "")}`,
+    `Tipo recomendado por EE: ${urbanRangeStatus().recommended ? urbanRangeStatus().recommended.label : "No aplica"}`,
     `EE admisible estructura: ${formatLarge(status.final.capacity)}`,
     `EE acumulados al periodo: ${formatLarge(status.final.esal)}`,
+    "",
+    "Diagnostico",
+    ...diagnosisLines(status),
+    technicalNotes.length ? "" : "",
+    technicalNotes.length ? "Notas tecnicas" : "",
+    ...technicalNotes,
     "",
     "Estructura",
     `${mode.layerNames[0]}: ${value("asphaltDepth").toFixed(1)} cm`,
@@ -801,7 +1079,7 @@ function reportText() {
     `PSI final: ${status.final.psi.toFixed(2)}`,
     `Consumo de vida: ${Math.round(status.final.damage * 100)}%`,
     "",
-    "Nota: herramienta didactica basada en EE, CBR, serviciabilidad y criterios normativos peruanos seleccionados. No reemplaza un expediente tecnico definitivo.",
+    "Nota: herramienta de apoyo basada en EE, CBR, serviciabilidad y criterios normativos peruanos seleccionados. No reemplaza un expediente tecnico definitivo.",
   ].join("\n");
 }
 
@@ -1375,6 +1653,13 @@ fields.pavementType.addEventListener("change", () => {
   },
 );
 
+[fields.coldSurfaceType, fields.rigidLoadTransfer, fields.paverBaseType, fields.edgeRestraint].forEach((input) => {
+  input.addEventListener("change", () => {
+    applyPeruvianNorms();
+    render();
+  });
+});
+
 saveScenarioA.addEventListener("click", () => {
   scenarioA = snapshotScenario();
   updateComparison();
@@ -1386,7 +1671,7 @@ saveScenarioB.addEventListener("click", () => {
 });
 
 exportReport.addEventListener("click", downloadReport);
-loadSantaRosaCase.addEventListener("click", applySantaRosaCase);
+loadBaseExample.addEventListener("click", applyBaseExample);
 
 playPause.addEventListener("click", () => {
   if (playing) stopPlayback();
@@ -1400,6 +1685,6 @@ resetButton.addEventListener("click", () => {
 });
 
 window.addEventListener("resize", render);
-applySantaRosaCase();
+applyBaseExample();
 requestAnimationFrame(animate);
 

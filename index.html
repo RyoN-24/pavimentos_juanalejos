@@ -91,23 +91,29 @@
             <label id="urbanClassWrap" class="hidden">
               Tipo de via urbana
               <select id="urbanClass">
-                <option value="express">Expresa</option>
-                <option value="arterial">Arterial</option>
-                <option value="collector">Colectora</option>
-                <option value="local">Local / estacionamiento</option>
+                <option value="urbanDevelopment">Habilitacion urbana, 0 a 300 mil EE</option>
+                <option value="local">Local, 300 mil a 840 mil EE</option>
+                <option value="collector">Colectora, 840 mil a 3.0 M EE</option>
+                <option value="arterialMinor">Arteria menor, 3.0 M a 8.3 M EE</option>
+                <option value="arterialMajor">Arteria mayor, 8.3 M a 28.4 M EE</option>
+                <option value="express">Expresa, mayor a 28.4 M EE</option>
               </select>
             </label>
+            <div id="urbanRecommendation" class="urban-recommendation hidden">
+              <span>Tipo recomendado por EE</span>
+              <strong id="recommendedUrbanClass">No aplica</strong>
+            </div>
             <div class="norm-summary">
               <span id="normName">Manual de Carreteras MTC 2014</span>
               <strong id="normValues">Pi 4.00, Pt 2.50, R 85%</strong>
             </div>
             <div class="case-study">
               <div>
-                <span>Caso aplicado</span>
-                <strong>Av. Santa Rosa</strong>
+                <span>Ejemplo base</span>
+                <strong>Urbano arterial menor</strong>
               </div>
-              <button id="loadSantaRosaCase" type="button">Cargar caso real</button>
-              <p id="caseStudyNote" class="case-note hidden">Caso Av. Santa Rosa: E6 Av. Argentina - Av. Morales Duarez, IMDA 91,033 veh/dia, pesados 4.7%, ESAL diseno 46.1 M. Paquete experimental: 8 cm carpeta, 50 cm base y 40 cm subbase.</p>
+              <button id="loadBaseExample" type="button">Cargar ejemplo</button>
+              <p id="caseStudyNote" class="case-note hidden">Ejemplo urbano general: EE de diseno 5.0 M, clasificacion Arteria menor. Ajusta los datos para representar cualquier proyecto.</p>
             </div>
           </div>
 
@@ -121,16 +127,16 @@
             </label>
             <label id="directEsalWrap">
               EE de diseno en carril de diseno
-              <input id="directDesignEsal" type="number" min="10000" max="80000000" step="10000" value="46100000" />
+              <input id="directDesignEsal" type="number" min="10000" max="80000000" step="10000" value="5000000" />
             </label>
             <label>
               1. Transito diario total (IMDA)
-              <input id="aadt" type="number" min="100" max="120000" step="100" value="91033" />
+              <input id="aadt" type="number" min="100" max="120000" step="100" value="15000" />
             </label>
             <label>
               2. Porcentaje de vehiculos pesados
-              <input id="heavyShare" type="range" min="2" max="65" step="0.1" value="4.7" />
-              <output for="heavyShare" id="heavyShareOut">4.7%</output>
+              <input id="heavyShare" type="range" min="2" max="65" step="0.1" value="12" />
+              <output for="heavyShare" id="heavyShareOut">12.0%</output>
             </label>
             <label>
               3. Factor camion promedio
@@ -323,16 +329,17 @@
                   <span>Semáforo técnico</span>
                   <strong id="complianceTitle">Evaluando sección</strong>
                 </div>
-                <p id="complianceDetail">Compara EE admisible, EE de diseño y serviciabilidad terminal.</p>
+                <p id="complianceDetail">Compara EE de diseño, rango de vía, EE admisible estructura y serviciabilidad terminal.</p>
                 <div class="compliance-checks">
-                  <span id="capacityCheck">EE admisible >= EE diseno</span>
+                  <span id="capacityCheck">EE admisible estructura >= EE diseno</span>
                   <span id="psiCheck">PSI final >= Pt</span>
+                  <span id="normativeCheck">Alcance normativo verificado</span>
                 </div>
               </section>
 
               <section class="status-panel">
                 <div>
-                  <span>Siguiente acción didáctica</span>
+                  <span>Siguiente acción</span>
                   <strong id="nextStep">Aumenta el tiempo o reproduce la simulación.</strong>
                 </div>
               </section>
@@ -354,6 +361,11 @@
               <svg class="metric-icon"><use href="#icon-traffic"></use></svg>
               <span>EE de diseño</span>
               <strong id="designEsalNow">0</strong>
+            </article>
+            <article>
+              <svg class="metric-icon"><use href="#icon-check"></use></svg>
+              <span>Rango EE de via urbana</span>
+              <strong id="urbanRangeNow">No aplica</strong>
             </article>
             <article>
               <svg class="metric-icon"><use href="#icon-layers"></use></svg>
@@ -441,7 +453,14 @@
               </div>
             </section>
             <section class="explain-card guide-card">
-              <h2>Guía rápida de ejes equivalentes</h2>
+              <h2>Cuadro resumen</h2>
+              <div class="summary-table" aria-label="Resumen de criterios de ejes equivalentes">
+                <div><strong>Criterio</strong><strong>Uso en el simulador</strong></div>
+                <div><span>EE de diseno</span><span>Demanda acumulada del proyecto en el carril de diseno.</span></div>
+                <div><span>Rango de vias</span><span>Clasifica la via urbana: habilitacion urbana, local, colectora, arterial o expresa.</span></div>
+                <div><span>EE admisible estructura</span><span>Capacidad del paquete segun espesores, CBR, coeficientes, drenaje y serviciabilidad.</span></div>
+                <div><span>Cumplimiento</span><span>La estructura cumple si cubre el EE de diseno y el PSI final queda sobre Pt.</span></div>
+              </div>
               <div class="guide-grid">
                 <article>
                   <span>Idea central</span>
@@ -452,8 +471,8 @@
                   <strong>EE acumulados en el carril de diseño durante el período de análisis.</strong>
                 </article>
                 <article>
-                  <span>Fórmula didáctica</span>
-                  <strong>EE = IMDA pesado x FC x 365 x Fd x Fcarril x crecimiento.</strong>
+                  <span>Fórmula de cálculo</span>
+                  <strong>EE = IMDA pesado x Fv x 365 x Fd x Fc x crecimiento.</strong>
                 </article>
                 <article>
                   <span>Cómo explicarlo</span>
@@ -463,9 +482,21 @@
               <p class="guide-note">
                 En el Manual MTC 2014 el tránsito pesado se clasifica por rangos TP según repeticiones acumuladas de EE de 8.2 t en el carril de diseño.
               </p>
+              <div class="range-table" aria-label="Rangos de vias urbanas">
+                <div><strong>Tipo de via urbana</strong><strong>Rango EE</strong></div>
+                <div><span>Habilitacion urbana</span><span>0 a 300 mil</span></div>
+                <div><span>Local</span><span>300 mil a 840 mil</span></div>
+                <div><span>Colectora</span><span>840 mil a 3.0 M</span></div>
+                <div><span>Arteria menor</span><span>3.0 M a 8.3 M</span></div>
+                <div><span>Arteria mayor</span><span>8.3 M a 28.4 M</span></div>
+                <div><span>Expresa</span><span>Mayor a 28.4 M</span></div>
+              </div>
+              <p class="guide-note">
+                Los rangos de vias clasifican la demanda; el EE admisible estructura verifica si el paquete de pavimento soporta esa demanda.
+              </p>
             </section>
-            <section class="explain-card">
-              <h2>Como presentarlo paso a paso</h2>
+            <section class="explain-card presentation-steps">
+              <h2>Flujo de uso</h2>
               <ol class="steps">
                 <li>Primero fija el trafico: IMDA, porcentaje de pesados y factor camion.</li>
                 <li>Luego ajusta la estructura: espesores, coeficientes y CBR de subrasante.</li>
@@ -474,16 +505,16 @@
                 <li>Compara las graficas: si el consumo llega a 100% o el PSI baja a 2.5, el pavimento falla.</li>
               </ol>
             </section>
-            <section class="explain-card">
-              <h2>Modelo usado</h2>
+            <section class="explain-card model-used">
+              <h2>Alcance tecnico</h2>
               <p>
-                La demo estima ESAL por trafico pesado y factor camion. La capacidad se aproxima con una curva tipo
+                El simulador estima ESAL por trafico pesado y factor camion. La capacidad se aproxima con una curva tipo
                 AASHTO 1993 usando numero estructural, modulo resiliente estimado desde CBR, serviciabilidad,
                 confiabilidad y drenaje. Para carreteras aplica criterios del Manual MTC; para vias urbanas aplica
-                CE.010 del RNE. Es una herramienta didactica, no reemplaza un diseno definitivo.
+                CE.010 del RNE. Es una herramienta de apoyo, no reemplaza un diseno definitivo.
               </p>
               <div class="formula">
-                ESAL = IMDA x %pesados x FC x 365 x Fd x Fcarril x crecimiento
+                ESAL = IMDA x %pesados x Fv x 365 x Fd x Fc x crecimiento
               </div>
             </section>
           </div>

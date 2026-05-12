@@ -318,6 +318,29 @@ output {
   line-height: 1.35;
 }
 
+.urban-recommendation {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid #afd7cd;
+  border-radius: var(--radius-sm);
+  background: var(--teal-soft);
+}
+
+.urban-recommendation span {
+  color: #126d5a;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.urban-recommendation strong {
+  color: #214a42;
+  font-size: 0.94rem;
+  line-height: 1.35;
+}
+
 .case-study {
   display: grid;
   gap: var(--space-3);
@@ -821,6 +844,12 @@ output {
   color: #933939;
 }
 
+.compliance-checks span.warn {
+  border-color: #e6c879;
+  background: var(--amber-soft);
+  color: #815a13;
+}
+
 .status-panel {
   display: block;
 }
@@ -844,7 +873,7 @@ output {
 
 .metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--space-4);
 }
 
@@ -867,7 +896,8 @@ output {
 }
 
 .metrics article:nth-child(3),
-.metrics article:nth-child(4) {
+.metrics article:nth-child(4),
+.metrics article:nth-child(5) {
   border-top-color: var(--teal);
 }
 
@@ -892,7 +922,8 @@ output {
 }
 
 .metrics article:nth-child(3) .metric-icon,
-.metrics article:nth-child(4) .metric-icon {
+.metrics article:nth-child(4) .metric-icon,
+.metrics article:nth-child(5) .metric-icon {
   background: var(--teal-soft);
   color: var(--teal);
 }
@@ -1142,6 +1173,46 @@ body[data-pavement="pavers"] .asphalt-layer {
   border-left: 4px solid var(--primary);
 }
 
+.guide-card .guide-grid,
+.guide-card .guide-note,
+.guide-card .range-table {
+  display: none;
+}
+
+.presentation-steps,
+.model-used {
+  display: none;
+}
+
+.summary-table {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid #bdd5da;
+  border-radius: var(--radius-sm);
+}
+
+.summary-table div {
+  display: grid;
+  grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.38fr);
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-top: 1px solid #d7e5e8;
+  background: rgb(255 255 255 / 72%);
+}
+
+.summary-table div:first-child {
+  border-top: 0;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+
+.summary-table span,
+.summary-table strong {
+  overflow-wrap: anywhere;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
 .guide-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1178,6 +1249,35 @@ body[data-pavement="pavers"] .asphalt-layer {
   background: var(--primary-soft);
   color: var(--primary-dark) !important;
   font-weight: 700;
+}
+
+.range-table {
+  display: grid;
+  overflow: hidden;
+  margin-top: var(--space-3);
+  border: 1px solid #bdd5da;
+  border-radius: var(--radius-sm);
+}
+
+.range-table div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid #d7e5e8;
+  background: rgb(255 255 255 / 72%);
+}
+
+.range-table div:first-child {
+  border-top: 0;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+
+.range-table span,
+.range-table strong {
+  overflow-wrap: anywhere;
+  font-size: 0.84rem;
 }
 
 @media (max-width: 1320px) {

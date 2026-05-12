@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start": "vercel dev",
+    "test": "node tests/normative-consistency.test.js",
     "build": "echo \"Static site: no build step required\""
   }
 }
