@@ -12,6 +12,7 @@ const fields = {
   growth: $("growth"),
   directionFactor: $("directionFactor"),
   laneFactor: $("laneFactor"),
+  supportLayerMode: $("supportLayerMode"),
   asphaltDepth: $("asphaltDepth"),
   baseDepth: $("baseDepth"),
   subbaseDepth: $("subbaseDepth"),
@@ -21,6 +22,7 @@ const fields = {
   cbr: $("cbr"),
   coldSurfaceType: $("coldSurfaceType"),
   rigidLoadTransfer: $("rigidLoadTransfer"),
+  concreteModulusRupture: $("concreteModulusRupture"),
   paverBaseType: $("paverBaseType"),
   edgeRestraint: $("edgeRestraint"),
   m2: $("m2"),
@@ -99,9 +101,15 @@ const resetButton = $("reset");
 const urbanClassWrap = $("urbanClassWrap");
 const urbanRecommendation = $("urbanRecommendation");
 const directEsalWrap = $("directEsalWrap");
+const trafficCalculationFields = $("trafficCalculationFields");
 const coldSettings = $("coldSettings");
 const rigidSettings = $("rigidSettings");
 const paverSettings = $("paverSettings");
+const structuralCoeffFields = $("structuralCoeffFields");
+const baseDepthWrap = $("baseDepthWrap");
+const subbaseDepthWrap = $("subbaseDepthWrap");
+const a2Wrap = $("a2Wrap");
+const a3Wrap = $("a3Wrap");
 const esalSteps = $("esalSteps");
 const complianceCard = $("complianceCard");
 const asphaltLayer = $("asphaltLayer");
@@ -111,6 +119,7 @@ const saveScenarioA = $("saveScenarioA");
 const saveScenarioB = $("saveScenarioB");
 const exportReport = $("exportReport");
 const loadBaseExample = $("loadBaseExample");
+const newDesign = $("newDesign");
 
 let playing = false;
 let lastFrame = performance.now();
@@ -120,6 +129,7 @@ let scenarioB = null;
 let playbackTimer = null;
 let lastPavementType = null;
 let activeCaseStudy = null;
+let applyingPreset = false;
 
 const baseExample = {
   name: "Ejemplo urbano general",
@@ -170,8 +180,8 @@ const pavementModes = {
     norm: "MTC 2014: pavimento rígido por AASHTO 93 con espesor de losa y factor de transferencia J.",
     surfaceLabel: "5. Espesor de losa de concreto, D",
     baseLabel: "6. Espesor de base o subbase de apoyo",
-    metricStructure: "Índice losa equivalente",
-    metricCapacity: "EE admisible estructura",
+    metricStructure: "Espesor de losa",
+    metricCapacity: "W18 admisible estimado",
     layerNames: ["Losa de concreto", "Base / subbase de apoyo", "Subbase granular"],
     defaults: { a1: 0.22, a2: 0.045, a3: 0.035, surface: 20, base: 15, subbase: 10, years: 20 },
     capacityFactor: 1.55,
@@ -183,8 +193,8 @@ const pavementModes = {
     norm: "MTC 2014: método ICPI para adoquines de concreto; CE.010: bloques intertrabados sobre cama de arena.",
     surfaceLabel: "5. Espesor de adoquín + cama de arena",
     baseLabel: "6. Espesor de base granular o tratada",
-    metricStructure: "Índice de trabazón",
-    metricCapacity: "EE admisible estructura",
+    metricStructure: "Índice estructural equivalente",
+    metricCapacity: "EE admisible adoquinado",
     layerNames: ["Adoquines + arena", "Base granular/tratada", "Subbase"],
     defaults: { a1: 0.16, a2: 0.052, a3: 0.04, surface: 10, base: 20, subbase: 15, years: 20 },
     capacityFactor: 0.95,
@@ -282,11 +292,28 @@ function pavementMode() {
   return pavementModes[fields.pavementType.value] || pavementModes.hotFlexible;
 }
 
+function usesFlexibleStructuralCoefficients() {
+  return fields.pavementType.value === "hotFlexible" || fields.pavementType.value === "coldFlexible";
+}
+
 function updateModeControls() {
+  const layerMode = fields.supportLayerMode.value;
+  const hasBase = layerMode === "baseSubbase" || layerMode === "baseOnly";
+  const hasSubbase = layerMode === "baseSubbase" || layerMode === "subbaseOnly";
+  const usesFlexibleCoefficients = usesFlexibleStructuralCoefficients();
+  const usesA2 = usesFlexibleCoefficients && hasBase;
+  const usesA3 = usesFlexibleCoefficients && hasSubbase;
+
+  trafficCalculationFields.classList.toggle("hidden", fields.trafficMode.value !== "calculated");
   coldSettings.classList.toggle("hidden", fields.pavementType.value !== "coldFlexible");
   rigidSettings.classList.toggle("hidden", fields.pavementType.value !== "rigid");
   paverSettings.classList.toggle("hidden", fields.pavementType.value !== "pavers");
   urbanRecommendation.classList.toggle("hidden", fields.projectType.value !== "urban");
+  structuralCoeffFields.classList.toggle("hidden", !usesFlexibleCoefficients);
+  baseDepthWrap.classList.toggle("hidden", !hasBase);
+  subbaseDepthWrap.classList.toggle("hidden", !hasSubbase);
+  a2Wrap.classList.toggle("hidden", !usesA2);
+  a3Wrap.classList.toggle("hidden", !usesA3);
 }
 
 function applyPavementModeDefaults(force = false) {
@@ -304,7 +331,10 @@ function applyPavementModeDefaults(force = false) {
   fields.designYears.value = String(mode.defaults.years);
   fields.time.value = "0";
   if (type === "coldFlexible") fields.coldSurfaceType.value = "coldMix";
-  if (type === "rigid") fields.rigidLoadTransfer.value = "2.8";
+  if (type === "rigid") {
+    fields.rigidLoadTransfer.value = "2.8";
+    fields.concreteModulusRupture.value = "650";
+  }
   if (type === "pavers") {
     fields.paverBaseType.value = "granular";
     fields.edgeRestraint.value = "adequate";
@@ -353,6 +383,22 @@ function trafficEsalAtYears(years) {
     value("laneFactor") *
     growthFactor(value("growth"), years)
   );
+}
+
+function hasBaseLayer() {
+  return fields.supportLayerMode.value === "baseSubbase" || fields.supportLayerMode.value === "baseOnly";
+}
+
+function hasSubbaseLayer() {
+  return fields.supportLayerMode.value === "baseSubbase" || fields.supportLayerMode.value === "subbaseOnly";
+}
+
+function activeBaseDepth() {
+  return hasBaseLayer() ? value("baseDepth") : 0;
+}
+
+function activeSubbaseDepth() {
+  return hasSubbaseLayer() ? value("subbaseDepth") : 0;
 }
 
 function designLaneEsal() {
@@ -477,9 +523,16 @@ function applyPeruvianNorms() {
 
 function structuralNumber() {
   const d1 = value("asphaltDepth");
-  const d2 = value("baseDepth");
-  const d3 = value("subbaseDepth");
+  const d2 = activeBaseDepth();
+  const d3 = activeSubbaseDepth();
   return value("a1") * d1 + value("a2") * d2 * value("m2") + value("a3") * d3 * value("m3");
+}
+
+function structureMetricValue() {
+  if (fields.pavementType.value === "rigid") {
+    return value("asphaltDepth");
+  }
+  return structuralNumber();
 }
 
 function technicalModeSummary() {
@@ -527,15 +580,14 @@ function aashtoReferenceCapacityEsal() {
 
 function rigidReferenceCapacityEsal() {
   const slabIn = Math.max(4.5, value("asphaltDepth") / 2.54);
-  const baseCm = value("baseDepth") + value("subbaseDepth") * 0.55;
-  const kValue = Math.max(80, 38 + value("cbr") * 22 + baseCm * 1.6);
+  const kValue = rigidSupportKValue();
   const j = Number(fields.rigidLoadTransfer.value);
   const jFactor = rigidTransferFactors[fields.rigidLoadTransfer.value].factor;
   const zR = reliabilityZR(value("reliability"));
   const so = 0.35;
   const pt = value("terminalPsi");
   const deltaPsi = Math.max(0.5, value("initialPsi") - pt);
-  const sc = 650;
+  const sc = value("concreteModulusRupture");
   const cd = Math.max(0.72, (value("m2") + value("m3")) / 2);
   const ec = 4_000_000;
   const d075 = slabIn ** 0.75;
@@ -550,6 +602,11 @@ function rigidReferenceCapacityEsal() {
     (4.22 - 0.32 * pt) * Math.log10(stressRatio);
   const climatePenalty = 1 - value("climateSeverity") / 260;
   return Math.max(10000, 10 ** logW18 * climatePenalty * jFactor);
+}
+
+function rigidSupportKValue() {
+  const baseCm = activeBaseDepth() + activeSubbaseDepth() * 0.55;
+  return Math.max(80, 38 + value("cbr") * 22 + baseCm * 1.6);
 }
 
 function cumulativeEsal(years) {
@@ -569,7 +626,7 @@ function simulationState(years) {
   const pt = value("terminalPsi");
   const serviceLoss = Math.max(0.5, pi - pt);
   const psi = Math.max(1.2, pi - serviceLoss * Math.min(1.35, damage ** 1.15) - 0.18 * climate * years / 10);
-  return { esal, capacity, damage, psi, sn: structuralNumber() };
+  return { esal, capacity, damage, psi, sn: structureMetricValue() };
 }
 
 function finalState() {
@@ -691,6 +748,10 @@ function complianceStatus() {
   };
 }
 
+function capacityMetricLabel() {
+  return pavementMode().metricCapacity;
+}
+
 function formatLarge(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)} M`;
   if (n >= 1000) return `${(n / 1000).toFixed(0)} mil`;
@@ -720,10 +781,11 @@ function urbanRangeTableLines() {
 function diagnosisLines(status) {
   const rangeStatus = urbanRangeStatus();
   const observations = status.warnings.filter((warning) => warning.level !== "note");
+  const capacityLabel = capacityMetricLabel();
   const lines = [
     status.capacityOk
-      ? "Capacidad estructural: cumple, el EE admisible estructura cubre el EE de diseno."
-      : "Capacidad estructural: no cumple, el EE admisible estructura es menor que el EE de diseno.",
+      ? `Capacidad estructural: cumple, ${capacityLabel} cubre el EE de diseno.`
+      : `Capacidad estructural: no cumple, ${capacityLabel} es menor que el EE de diseno.`,
     status.psiOk
       ? "Serviciabilidad: cumple, el PSI final queda por encima del Pt."
       : "Serviciabilidad: no cumple, el PSI final queda por debajo del Pt.",
@@ -745,19 +807,27 @@ function diagnosisLines(status) {
 }
 
 function technicalNoteLines(status) {
-  return status.warnings
+  const notes = status.warnings
     .filter((warning) => warning.level === "note")
     .map((warning) => warning.text);
+  notes.push(`Daño estructural usado: EE acumulado / ${capacityMetricLabel()}.`);
+  notes.push("El PSI se reduce con el daño acumulado y con la severidad climatica configurada.");
+  if (fields.pavementType.value === "pavers") {
+    notes.push("Adoquinado: el adoquin + cama de arena se evalua como capa de rodadura equivalente, ajustada por tipo de base, confinamiento, CBR, drenaje y serviciabilidad.");
+  }
+  return notes;
 }
 
 function applyBaseExample() {
   stopPlayback();
+  applyingPreset = true;
   activeCaseStudy = baseExample;
   fields.pavementType.value = "hotFlexible";
   applyPavementModeDefaults(true);
   fields.projectType.value = "urban";
   fields.urbanClass.value = "arterialMinor";
   fields.trafficMode.value = "direct";
+  fields.supportLayerMode.value = "baseSubbase";
   fields.directDesignEsal.value = String(baseExample.designEsal);
   fields.aadt.value = String(baseExample.imda);
   fields.heavyShare.value = String(baseExample.heavyShare);
@@ -771,6 +841,37 @@ function applyBaseExample() {
   scenarioB = null;
   applyPeruvianNorms();
   render();
+  applyingPreset = false;
+}
+
+function clearExampleContext() {
+  if (applyingPreset) return;
+  activeCaseStudy = null;
+}
+
+function startNewDesign() {
+  stopPlayback();
+  applyingPreset = true;
+  activeCaseStudy = null;
+  fields.pavementType.value = "hotFlexible";
+  applyPavementModeDefaults(true);
+  fields.projectType.value = "urban";
+  fields.urbanClass.value = "urbanDevelopment";
+  fields.trafficMode.value = "direct";
+  fields.supportLayerMode.value = "baseSubbase";
+  fields.directDesignEsal.value = "300000";
+  fields.aadt.value = "1000";
+  fields.heavyShare.value = "10";
+  fields.truckFactor.value = "1.00";
+  fields.growth.value = "3";
+  fields.directionFactor.value = "0.50";
+  fields.laneFactor.value = "1.00";
+  fields.time.value = "0";
+  scenarioA = null;
+  scenarioB = null;
+  applyPeruvianNorms();
+  render();
+  applyingPreset = false;
 }
 
 function conditionFromDamage(damage, psi) {
@@ -783,6 +884,12 @@ function conditionFromDamage(damage, psi) {
 
 function teachingMessage(state) {
   const type = fields.pavementType.value;
+  const strengthenText =
+    type === "rigid"
+      ? "Compara aumentando el espesor de losa o mejorando el soporte k."
+      : type === "pavers"
+        ? "Compara aumentando el espesor de base o mejorando el confinamiento."
+        : "Compara aumentando el espesor asfaltico o el CBR de subrasante.";
   if (state.damage < 0.25) {
     return [
       type === "rigid"
@@ -806,7 +913,7 @@ function teachingMessage(state) {
   if (state.damage < 0.85) {
     return [
       "El deterioro ya es visible y el PSI baja con mayor rapidez.",
-      "Compara aumentando el espesor asfaltico o el CBR de subrasante.",
+      strengthenText,
     ];
   }
   if (state.damage < 1 || state.psi > value("terminalPsi")) {
@@ -839,8 +946,8 @@ function updateOutputs(state) {
   outputs.heavyShare.textContent = formatPercent(value("heavyShare"));
   outputs.growth.textContent = `${value("growth").toFixed(1)}%`;
   outputs.asphaltDepth.textContent = `${value("asphaltDepth").toFixed(1)} cm`;
-  outputs.baseDepth.textContent = `${value("baseDepth").toFixed(1)} cm`;
-  outputs.subbaseDepth.textContent = `${value("subbaseDepth").toFixed(1)} cm`;
+  outputs.baseDepth.textContent = hasBaseLayer() ? `${value("baseDepth").toFixed(1)} cm` : "No considerada";
+  outputs.subbaseDepth.textContent = hasSubbaseLayer() ? `${value("subbaseDepth").toFixed(1)} cm` : "No considerada";
   outputs.cbr.textContent = `${value("cbr").toFixed(1)}%`;
   outputs.climateSeverity.textContent = value("climateSeverity").toFixed(0);
   outputs.reliability.textContent = `${value("reliability").toFixed(0)}%`;
@@ -891,8 +998,8 @@ function updateOutputs(state) {
     ? `Vida estimada: ${failure.toFixed(1)} anos`
     : "Vida estimada: mayor al periodo";
 
-  outputs.caseStudyNote.classList.toggle("hidden", !activeCaseStudy);
-  outputs.caseStudyNote.textContent = activeCaseStudy ? activeCaseStudy.note : "";
+  outputs.caseStudyNote.classList.add("hidden");
+  outputs.caseStudyNote.textContent = "";
 }
 
 function updateEsalSteps() {
@@ -903,8 +1010,8 @@ function updateEsalSteps() {
       <p>2) EE acumulado al ano ${value("time").toFixed(1)} = ${formatLarge(cumulativeEsal(value("time")))}</p>
       <p>3) Modelo activo = ${mode.title}. ${technicalModeSummary()}</p>
       <p>4) ${urbanRangeStepText()}</p>
-      <p>5) EE admisible estructura = ${formatLarge(designCapacityEsal())}</p>
-      <p>6) Consumo = EE acumulado / EE admisible estructura = ${(simulationState(value("time")).damage * 100).toFixed(0)}%</p>
+      <p>5) ${capacityMetricLabel()} = ${formatLarge(designCapacityEsal())}</p>
+      <p>6) Consumo = EE acumulado / ${capacityMetricLabel()} = ${(simulationState(value("time")).damage * 100).toFixed(0)}%</p>
     `;
     return;
   }
@@ -918,7 +1025,7 @@ function updateEsalSteps() {
     <p>4) EE diseno = EE anual x factor crecimiento = ${formatLarge(designLaneEsal())}</p>
     <p>5) Modelo activo = ${mode.title}. ${technicalModeSummary()}</p>
     <p>6) ${urbanRangeStepText()}</p>
-    <p>7) EE admisible estructura = ${formatLarge(designCapacityEsal())}</p>
+    <p>7) ${capacityMetricLabel()} = ${formatLarge(designCapacityEsal())}</p>
   `;
 }
 
@@ -934,12 +1041,12 @@ function updateCompliance() {
       ? ` Rango via ${rangeStatus.selected.label}: ${formatRange(rangeStatus.selected.minEsal, rangeStatus.selected.maxEsal)}.`
       : "";
   outputs.complianceDetail.textContent =
-    `EE admisible estructura ${formatLarge(status.final.capacity)} vs EE diseno ${formatLarge(designLaneEsal())}.${rangeText} ` +
+    `${capacityMetricLabel()} ${formatLarge(status.final.capacity)} vs EE diseno ${formatLarge(designLaneEsal())}.${rangeText} ` +
     `PSI final ${status.final.psi.toFixed(2)} vs Pt ${value("terminalPsi").toFixed(2)}.`;
 
   outputs.capacityCheck.textContent = status.capacityOk
-    ? "OK: EE admisible estructura >= EE diseno"
-    : "Revisar: EE admisible estructura < EE diseno";
+    ? `OK: ${capacityMetricLabel()} >= EE diseno`
+    : `Revisar: ${capacityMetricLabel()} < EE diseno`;
   outputs.psiCheck.textContent = status.psiOk
       ? "OK: PSI final >= Pt"
       : "Revisar: PSI final < Pt";
@@ -955,19 +1062,21 @@ function updateCompliance() {
 
 function updateLayerVisual() {
   const d1 = value("asphaltDepth");
-  const d2 = value("baseDepth");
-  const d3 = value("subbaseDepth");
+  const d2 = activeBaseDepth();
+  const d3 = activeSubbaseDepth();
   const total = Math.max(1, d1 + d2 + d3);
   const available = 148;
 
   asphaltLayer.style.height = `${Math.max(28, (d1 / total) * available)}px`;
-  baseLayer.style.height = `${Math.max(28, (d2 / total) * available)}px`;
-  subbaseLayer.style.height = `${Math.max(24, (d3 / total) * available)}px`;
+  baseLayer.style.height = `${d2 > 0 ? Math.max(28, (d2 / total) * available) : 0}px`;
+  subbaseLayer.style.height = `${d3 > 0 ? Math.max(24, (d3 / total) * available) : 0}px`;
+  baseLayer.classList.toggle("hidden-layer", d2 === 0);
+  subbaseLayer.classList.toggle("hidden-layer", d3 === 0);
 
   outputs.totalDepthLabel.textContent = `${total.toFixed(1)} cm`;
   outputs.asphaltLayerValue.textContent = `${d1.toFixed(1)} cm`;
-  outputs.baseLayerValue.textContent = `${d2.toFixed(1)} cm`;
-  outputs.subbaseLayerValue.textContent = `${d3.toFixed(1)} cm`;
+  outputs.baseLayerValue.textContent = d2 > 0 ? `${d2.toFixed(1)} cm` : "No considerada";
+  outputs.subbaseLayerValue.textContent = d3 > 0 ? `${d3.toFixed(1)} cm` : "No considerada";
   outputs.subgradeLayerValue.textContent = `CBR ${value("cbr").toFixed(1)}%`;
 }
 
@@ -977,21 +1086,21 @@ function snapshotScenario() {
     pavementType: pavementMode().title,
     result: status.title,
     level: status.level,
-    sn: structuralNumber(),
+    sn: status.final.sn,
     designEsal: designLaneEsal(),
     capacity: status.final.capacity,
     psi: status.final.psi,
     damage: status.final.damage,
     years: value("designYears"),
     asphalt: value("asphaltDepth"),
-    base: value("baseDepth"),
-    subbase: value("subbaseDepth"),
+    base: activeBaseDepth(),
+    subbase: activeSubbaseDepth(),
   };
 }
 
 function scenarioText(snapshot) {
   if (!snapshot) return "Sin guardar";
-  return `${snapshot.result} | ${snapshot.pavementType} | ${snapshot.sn.toFixed(2)} | PSI ${snapshot.psi.toFixed(2)} | ${Math.round(snapshot.damage * 100)}%`;
+  return `${snapshot.result} | ${snapshot.pavementType} | indicador ${snapshot.sn.toFixed(2)} | PSI ${snapshot.psi.toFixed(2)} | ${Math.round(snapshot.damage * 100)}%`;
 }
 
 function updateComparison() {
@@ -1009,9 +1118,75 @@ function updateComparison() {
   const psiDelta = scenarioB.psi - scenarioA.psi;
   outputs.compareStatus.textContent = capacityDelta >= 0 ? "B mejora la capacidad" : "B reduce la capacidad";
   outputs.compareSummary.textContent =
-    `B cambia el SN en ${snDelta >= 0 ? "+" : ""}${snDelta.toFixed(2)}, ` +
+    `B cambia el indicador estructural en ${snDelta >= 0 ? "+" : ""}${snDelta.toFixed(2)}, ` +
     `la capacidad en ${capacityDelta >= 0 ? "+" : ""}${capacityDelta.toFixed(0)}% ` +
     `y el PSI final en ${psiDelta >= 0 ? "+" : ""}${psiDelta.toFixed(2)}.`;
+}
+
+function supportLayerLabel() {
+  const labels = {
+    baseSubbase: "Base + subbase",
+    baseOnly: "Solo base",
+    subbaseOnly: "Solo subbase",
+    none: "Sin base ni subbase",
+  };
+  return labels[fields.supportLayerMode.value] || labels.baseSubbase;
+}
+
+function structureReportLines(status, mode) {
+  const lines = [
+    `Configuracion de apoyo: ${supportLayerLabel()}`,
+    `${mode.layerNames[0]}: ${value("asphaltDepth").toFixed(1)} cm`,
+  ];
+
+  if (hasBaseLayer()) lines.push(`${mode.layerNames[1]}: ${value("baseDepth").toFixed(1)} cm`);
+  if (hasSubbaseLayer()) lines.push(`${mode.layerNames[2]}: ${value("subbaseDepth").toFixed(1)} cm`);
+  if (!hasBaseLayer() && !hasSubbaseLayer()) lines.push("Capas granulares de apoyo: no consideradas");
+
+  lines.push(`CBR subrasante: ${value("cbr").toFixed(1)}%`);
+
+  if (usesFlexibleStructuralCoefficients()) {
+    lines.push(`Coeficientes estructurales: a1 ${value("a1").toFixed(3)}`);
+    if (hasBaseLayer()) lines.push(`Coeficiente a2: ${value("a2").toFixed(3)}`);
+    if (hasSubbaseLayer()) lines.push(`Coeficiente a3: ${value("a3").toFixed(3)}`);
+  }
+
+  lines.push(`${mode.metricStructure}: ${status.final.sn.toFixed(2)}`);
+  if (fields.pavementType.value === "rigid") lines.push(`Transferencia de carga: ${rigidTransferFactors[fields.rigidLoadTransfer.value].label}`);
+  if (fields.pavementType.value === "rigid") lines.push(`Modulo k estimado: ${rigidSupportKValue().toFixed(0)} pci`);
+  if (fields.pavementType.value === "rigid") lines.push(`Modulo de rotura MR: ${value("concreteModulusRupture").toFixed(0)} psi`);
+  if (fields.pavementType.value === "coldFlexible") lines.push(`Solucion en frio: ${coldSurfaceFactors[fields.coldSurfaceType.value].label}`);
+  if (fields.pavementType.value === "pavers") {
+    lines.push("Coeficientes equivalentes: internos del modelo simplificado de adoquinado.");
+    lines.push(`Base adoquinado: ${paverBaseFactors[fields.paverBaseType.value].label}`);
+    lines.push(`Confinamiento: ${edgeRestraintFactors[fields.edgeRestraint.value].label}`);
+  }
+  return lines;
+}
+
+function trafficReportLines() {
+  if (fields.trafficMode.value === "direct") {
+    return [
+      "Modo de transito: EE de diseno ingresado directamente",
+      `EE de diseno: ${formatLarge(designLaneEsal())}`,
+      `Periodo de analisis: ${value("designYears").toFixed(0)} anos`,
+    ];
+  }
+
+  const dailyHeavy = value("aadt") * (value("heavyShare") / 100);
+  const annualEsal = dailyHeavy * value("truckFactor") * 365 * value("directionFactor") * value("laneFactor");
+  return [
+    "Modo de transito: EE calculado desde IMDA",
+    `IMDA: ${value("aadt").toLocaleString("es-PE")} veh/dia`,
+    `Vehiculos pesados: ${formatPercent(value("heavyShare"))}`,
+    `Vehiculos pesados/dia: ${formatLarge(dailyHeavy)}`,
+    `Factor camion promedio: ${value("truckFactor").toFixed(2)}`,
+    `Factor direccion: ${value("directionFactor").toFixed(2)}`,
+    `Factor carril: ${value("laneFactor").toFixed(2)}`,
+    `Crecimiento anual transito pesado: ${value("growth").toFixed(1)}%`,
+    `EE anual carril de diseno: ${formatLarge(annualEsal)}`,
+    `EE de diseno calculado: ${formatLarge(designLaneEsal())}`,
+  ];
 }
 
 function reportText() {
@@ -1019,23 +1194,10 @@ function reportText() {
   const mode = pavementMode();
   const reportWarnings = status.warnings.filter((warning) => warning.level !== "note");
   const technicalNotes = technicalNoteLines(status);
-  const caseLines = activeCaseStudy
-    ? [
-        "Ejemplo aplicado",
-        `Nombre: ${activeCaseStudy.name}`,
-        `Fuente: ${activeCaseStudy.source}`,
-        `Tramo/estacion: ${activeCaseStudy.station}`,
-        `Escenario usado: ${activeCaseStudy.scenario}`,
-        `IMDA referencia: ${activeCaseStudy.imda.toLocaleString("es-PE")} veh/dia`,
-        `Pesados referencia: ${activeCaseStudy.heavyShare.toFixed(1)}%`,
-        `Factor camion referencial: ${activeCaseStudy.truckFactor.toFixed(2)}`,
-        `ESAL de diseno del caso: ${formatLarge(activeCaseStudy.designEsal)}`,
-        `Paquete experimental: carpeta ${activeCaseStudy.asphaltDepth.toFixed(0)} cm, base ${activeCaseStudy.baseDepth.toFixed(0)} cm, subbase ${activeCaseStudy.subbaseDepth.toFixed(0)} cm`,
-        "",
-      ]
-    : [];
+  technicalNotes.push("Los deterioros visuales se derivan del consumo de vida y la perdida de PSI; no son predicciones calibradas independientes de fisuracion, ahuellamiento o baches.");
   return [
     "REPORTE RESUMEN - SIMULADOR INTEGRAL DE PAVIMENTOS",
+    `Generado: ${new Date().toLocaleString("es-PE")}`,
     "",
     `Tipo de pavimento: ${mode.title}`,
     `Normativa: ${outputs.normName.textContent}`,
@@ -1044,34 +1206,25 @@ function reportText() {
     `Resultado: ${status.title}`,
     reportWarnings.length ? `Advertencias normativas: ${reportWarnings.map((warning) => warning.text).join(" | ")}` : "",
     "",
-    ...caseLines,
     "Rangos de vias",
     ...urbanRangeTableLines(),
     "",
     "Transito y EE",
-    "Lectura: el rango urbano clasifica el tipo de via por demanda; el EE admisible estructura verifica la capacidad del paquete de pavimento.",
-    `EE de diseno: ${formatLarge(designLaneEsal())}`,
+    `Lectura: el rango urbano clasifica el tipo de via por demanda; ${capacityMetricLabel()} verifica la capacidad del paquete de pavimento.`,
+    ...trafficReportLines(),
     `Rango EE de via urbana: ${urbanRangeStepText().replace("Rango EE de via urbana = ", "")}`,
     `Tipo recomendado por EE: ${urbanRangeStatus().recommended ? urbanRangeStatus().recommended.label : "No aplica"}`,
-    `EE admisible estructura: ${formatLarge(status.final.capacity)}`,
+    `${capacityMetricLabel()}: ${formatLarge(status.final.capacity)}`,
     `EE acumulados al periodo: ${formatLarge(status.final.esal)}`,
     "",
     "Diagnostico",
     ...diagnosisLines(status),
-    technicalNotes.length ? "" : "",
-    technicalNotes.length ? "Notas tecnicas" : "",
+    "",
+    "Notas tecnicas",
     ...technicalNotes,
     "",
     "Estructura",
-    `${mode.layerNames[0]}: ${value("asphaltDepth").toFixed(1)} cm`,
-    `${mode.layerNames[1]}: ${value("baseDepth").toFixed(1)} cm`,
-    `${mode.layerNames[2]}: ${value("subbaseDepth").toFixed(1)} cm`,
-    `CBR subrasante: ${value("cbr").toFixed(1)}%`,
-    `${mode.metricStructure}: ${status.final.sn.toFixed(2)}`,
-    fields.pavementType.value === "rigid" ? `Transferencia de carga: ${rigidTransferFactors[fields.rigidLoadTransfer.value].label}` : "",
-    fields.pavementType.value === "coldFlexible" ? `Solucion en frio: ${coldSurfaceFactors[fields.coldSurfaceType.value].label}` : "",
-    fields.pavementType.value === "pavers" ? `Base adoquinado: ${paverBaseFactors[fields.paverBaseType.value].label}` : "",
-    fields.pavementType.value === "pavers" ? `Confinamiento: ${edgeRestraintFactors[fields.edgeRestraint.value].label}` : "",
+    ...structureReportLines(status, mode),
     "",
     "Serviciabilidad",
     `Pi: ${value("initialPsi").toFixed(2)}`,
@@ -1083,12 +1236,144 @@ function reportText() {
   ].join("\n");
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function listItems(lines) {
+  return lines.filter(Boolean).map((line) => `<li>${escapeHtml(line)}</li>`).join("");
+}
+
+function reportHtml() {
+  render();
+  const status = complianceStatus();
+  const mode = pavementMode();
+  const reportWarnings = status.warnings.filter((warning) => warning.level !== "note");
+  const technicalNotes = technicalNoteLines(status);
+  technicalNotes.push("Los deterioros visuales se derivan del consumo de vida y la perdida de PSI; no son predicciones calibradas independientes de fisuracion, ahuellamiento o baches.");
+  const roadImage = roadCanvas.toDataURL("image/png");
+  const damageImage = chartCanvas.toDataURL("image/png");
+  const psiImage = psiCanvas.toDataURL("image/png");
+  const generatedAt = new Date().toLocaleString("es-PE");
+  const rangeStatus = urbanRangeStatus();
+  const resultClass = status.level === "pass" ? "pass" : status.level === "warn" ? "warn" : "fail";
+
+  return `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reporte simulador de pavimentos</title>
+  <style>
+    body { margin: 0; background: #eef4f6; color: #17242c; font-family: Arial, sans-serif; }
+    main { max-width: 1080px; margin: 0 auto; padding: 32px; }
+    header { display: grid; gap: 8px; padding-bottom: 18px; border-bottom: 3px solid #0f6f82; }
+    h1 { margin: 0; font-size: 28px; }
+    h2 { margin: 0 0 12px; font-size: 18px; color: #063f4b; }
+    p { line-height: 1.5; }
+    .muted { color: #60717a; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
+    .card, section { background: #fff; border: 1px solid #c9d9de; border-radius: 8px; padding: 16px; }
+    .card span { display: block; color: #60717a; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .card strong { display: block; margin-top: 6px; font-size: 20px; }
+    .pass { border-left: 6px solid #1f7a5a; }
+    .warn { border-left: 6px solid #d5962c; }
+    .fail { border-left: 6px solid #b7423a; }
+    .sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    ul { margin: 0; padding-left: 20px; line-height: 1.55; }
+    .wide { grid-column: 1 / -1; }
+    .visuals { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+    figure { margin: 0; background: #fff; border: 1px solid #d5e1e5; border-radius: 8px; overflow: hidden; }
+    figure img { display: block; width: 100%; height: auto; }
+    figcaption { padding: 10px 12px; color: #45565f; font-size: 13px; font-weight: 700; }
+    .stack { display: grid; gap: 14px; }
+    @media print { body { background: #fff; } main { padding: 18px; } .card, section, figure { break-inside: avoid; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="muted">Generado: ${escapeHtml(generatedAt)}</p>
+      <h1>Reporte resumen - Simulador integral de pavimentos</h1>
+      <p>${escapeHtml(mode.title)} | ${escapeHtml(outputs.normName.textContent)}</p>
+    </header>
+
+    <div class="grid">
+      <div class="card ${resultClass}"><span>Resultado</span><strong>${escapeHtml(status.title)}</strong></div>
+      <div class="card"><span>EE de diseno</span><strong>${escapeHtml(formatLarge(designLaneEsal()))}</strong></div>
+      <div class="card"><span>${escapeHtml(capacityMetricLabel())}</span><strong>${escapeHtml(formatLarge(status.final.capacity))}</strong></div>
+      <div class="card"><span>PSI final</span><strong>${escapeHtml(status.final.psi.toFixed(2))}</strong></div>
+    </div>
+
+    <div class="sections">
+      <section>
+        <h2>Transito y rango de via</h2>
+        <ul>
+          ${listItems([
+            ...trafficReportLines(),
+            `Rango EE de via urbana: ${urbanRangeStepText().replace("Rango EE de via urbana = ", "")}`,
+            `Tipo recomendado por EE: ${rangeStatus.recommended ? rangeStatus.recommended.label : "No aplica"}`,
+            `EE acumulados al periodo: ${formatLarge(status.final.esal)}`,
+          ])}
+        </ul>
+      </section>
+      <section>
+        <h2>Estructura</h2>
+        <ul>${listItems(structureReportLines(status, mode))}</ul>
+      </section>
+      <section>
+        <h2>Diagnostico</h2>
+        <ul>${listItems(diagnosisLines(status))}</ul>
+      </section>
+      <section>
+        <h2>Serviciabilidad y ambiente</h2>
+        <ul>
+          ${listItems([
+            `Pi: ${value("initialPsi").toFixed(2)}`,
+            `Pt: ${value("terminalPsi").toFixed(2)}`,
+            `Consumo de vida: ${Math.round(status.final.damage * 100)}%`,
+            `Severidad climatica: ${value("climateSeverity").toFixed(0)}`,
+            "La severidad climatica reduce la capacidad estimada y acelera la perdida de PSI en esta aproximacion.",
+          ])}
+        </ul>
+      </section>
+      <section class="wide">
+        <h2>Notas tecnicas</h2>
+        <ul>
+          ${listItems([
+            reportWarnings.length ? `Advertencias normativas: ${reportWarnings.map((warning) => warning.text).join(" | ")}` : "",
+            ...technicalNotes,
+            "Herramienta de apoyo basada en EE, CBR, serviciabilidad y criterios normativos peruanos seleccionados. No reemplaza un expediente tecnico definitivo.",
+          ])}
+        </ul>
+      </section>
+      <section class="wide">
+        <h2>Graficos del diseno actual</h2>
+        <div class="visuals">
+          <figure><img src="${roadImage}" alt="Visualizacion de deterioro del pavimento"><figcaption>Visualizacion de deterioro</figcaption></figure>
+          <div class="stack">
+            <figure><img src="${damageImage}" alt="Grafica de consumo de vida"><figcaption>Consumo de vida</figcaption></figure>
+            <figure><img src="${psiImage}" alt="Grafica de serviciabilidad PSI"><figcaption>Serviciabilidad PSI</figcaption></figure>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>`;
+}
+
 function downloadReport() {
-  const blob = new Blob([reportText()], { type: "text/plain;charset=utf-8" });
+  const blob = new Blob([reportHtml()], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "reporte-simulador-pavimentos.txt";
+  link.download = "reporte-simulador-pavimentos.html";
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -1630,9 +1915,15 @@ document.querySelectorAll(".tab").forEach((tab) => {
   });
 });
 
-Object.values(fields).forEach((input) => input.addEventListener("input", render));
+Object.values(fields).forEach((input) =>
+  input.addEventListener("input", () => {
+    if (input !== fields.time) clearExampleContext();
+    render();
+  }),
+);
 
 fields.pavementType.addEventListener("change", () => {
+  clearExampleContext();
   applyPavementModeDefaults();
   applyPeruvianNorms();
   scenarioA = null;
@@ -1640,21 +1931,24 @@ fields.pavementType.addEventListener("change", () => {
   render();
 });
 
-[fields.projectType, fields.urbanClass, fields.trafficMode, fields.directDesignEsal, fields.aadt, fields.heavyShare, fields.truckFactor, fields.growth, fields.designYears].forEach(
+[fields.projectType, fields.urbanClass, fields.trafficMode, fields.directDesignEsal, fields.aadt, fields.heavyShare, fields.truckFactor, fields.growth, fields.designYears, fields.supportLayerMode].forEach(
   (input) => {
     input.addEventListener("input", () => {
+      clearExampleContext();
       applyPeruvianNorms();
       render();
     });
     input.addEventListener("change", () => {
+      clearExampleContext();
       applyPeruvianNorms();
       render();
     });
   },
 );
 
-[fields.coldSurfaceType, fields.rigidLoadTransfer, fields.paverBaseType, fields.edgeRestraint].forEach((input) => {
+[fields.coldSurfaceType, fields.rigidLoadTransfer, fields.concreteModulusRupture, fields.paverBaseType, fields.edgeRestraint].forEach((input) => {
   input.addEventListener("change", () => {
+    clearExampleContext();
     applyPeruvianNorms();
     render();
   });
@@ -1672,6 +1966,7 @@ saveScenarioB.addEventListener("click", () => {
 
 exportReport.addEventListener("click", downloadReport);
 loadBaseExample.addEventListener("click", applyBaseExample);
+newDesign.addEventListener("click", startNewDesign);
 
 playPause.addEventListener("click", () => {
   if (playing) stopPlayback();

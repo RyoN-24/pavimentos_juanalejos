@@ -55,21 +55,6 @@
             </div>
           </div>
 
-          <div class="tabs" role="tablist" aria-label="Grupos de parametros">
-            <button class="tab active" data-panel="traffic" type="button">
-              <svg class="ui-icon"><use href="#icon-traffic"></use></svg>
-              <span>Trafico</span>
-            </button>
-            <button class="tab" data-panel="structure" type="button">
-              <svg class="ui-icon"><use href="#icon-layers"></use></svg>
-              <span>Estructura</span>
-            </button>
-            <button class="tab" data-panel="climate" type="button">
-              <svg class="ui-icon"><use href="#icon-climate"></use></svg>
-              <span>Ambiente</span>
-            </button>
-          </div>
-
           <div class="norm-box" aria-label="Normativa peruana aplicada">
             <h2>Normativa peruana</h2>
             <label>
@@ -103,18 +88,32 @@
               <span>Tipo recomendado por EE</span>
               <strong id="recommendedUrbanClass">No aplica</strong>
             </div>
-            <div class="norm-summary">
+            <div class="norm-summary hidden">
               <span id="normName">Manual de Carreteras MTC 2014</span>
               <strong id="normValues">Pi 4.00, Pt 2.50, R 85%</strong>
             </div>
             <div class="case-study">
-              <div>
-                <span>Ejemplo base</span>
-                <strong>Urbano arterial menor</strong>
+              <div class="case-actions">
+                <button id="loadBaseExample" type="button">Cargar ejemplo</button>
+                <button id="newDesign" type="button">Nuevo diseño</button>
               </div>
-              <button id="loadBaseExample" type="button">Cargar ejemplo</button>
               <p id="caseStudyNote" class="case-note hidden">Ejemplo urbano general: EE de diseno 5.0 M, clasificacion Arteria menor. Ajusta los datos para representar cualquier proyecto.</p>
             </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Grupos de parametros">
+            <button class="tab active" data-panel="traffic" type="button">
+              <svg class="ui-icon"><use href="#icon-traffic"></use></svg>
+              <span>Trafico</span>
+            </button>
+            <button class="tab" data-panel="structure" type="button">
+              <svg class="ui-icon"><use href="#icon-layers"></use></svg>
+              <span>Estructura</span>
+            </button>
+            <button class="tab" data-panel="climate" type="button">
+              <svg class="ui-icon"><use href="#icon-climate"></use></svg>
+              <span>Ambiente</span>
+            </button>
           </div>
 
           <form class="panel active" id="traffic" autocomplete="off">
@@ -129,62 +128,77 @@
               EE de diseno en carril de diseno
               <input id="directDesignEsal" type="number" min="10000" max="80000000" step="10000" value="5000000" />
             </label>
-            <label>
-              1. Transito diario total (IMDA)
-              <input id="aadt" type="number" min="100" max="120000" step="100" value="15000" />
-            </label>
-            <label>
-              2. Porcentaje de vehiculos pesados
-              <input id="heavyShare" type="range" min="2" max="65" step="0.1" value="12" />
-              <output for="heavyShare" id="heavyShareOut">12.0%</output>
-            </label>
-            <label>
-              3. Factor camion promedio
-              <input id="truckFactor" type="number" min="0.1" max="8" step="0.01" value="1.44" />
-            </label>
-            <label>
-              4. Crecimiento anual del trafico
-              <input id="growth" type="range" min="0" max="12" step="0.1" value="4.2" />
-              <output for="growth" id="growthOut">4.2%</output>
-            </label>
-            <label>
-              Factor direccion
-              <input id="directionFactor" type="number" min="0.3" max="0.7" step="0.01" value="0.50" />
-            </label>
-            <label>
-              Factor carril
-              <input id="laneFactor" type="number" min="0.4" max="1" step="0.01" value="0.90" />
-            </label>
+            <div id="trafficCalculationFields" class="control-group">
+              <p class="field-note">Estos campos se usan solo cuando el EE se calcula desde transito.</p>
+              <label>
+                1. Transito diario total (IMDA)
+                <input id="aadt" type="number" min="100" max="120000" step="100" value="15000" />
+              </label>
+              <label>
+                2. Porcentaje de vehiculos pesados
+                <input id="heavyShare" type="range" min="2" max="65" step="0.1" value="12" />
+                <output for="heavyShare" id="heavyShareOut">12.0%</output>
+              </label>
+              <label>
+                3. Factor camion promedio
+                <input id="truckFactor" type="number" min="0.1" max="8" step="0.01" value="1.44" />
+                <small>Valor agregado para convertir transito pesado en EE; en estudios reales proviene de la composicion vehicular.</small>
+              </label>
+              <label>
+                4. Crecimiento anual del transito pesado
+                <input id="growth" type="range" min="0" max="12" step="0.1" value="4.2" />
+                <output for="growth" id="growthOut">4.2%</output>
+              </label>
+              <label>
+                Factor direccion
+                <input id="directionFactor" type="number" min="0.3" max="0.7" step="0.01" value="0.50" />
+              </label>
+              <label>
+                Factor carril
+                <input id="laneFactor" type="number" min="0.4" max="1" step="0.01" value="0.90" />
+              </label>
+            </div>
           </form>
 
           <form class="panel" id="structure" autocomplete="off">
+            <label>
+              Capas de apoyo consideradas
+              <select id="supportLayerMode">
+                <option value="baseSubbase" selected>Base + subbase</option>
+                <option value="baseOnly">Solo base</option>
+                <option value="subbaseOnly">Solo subbase</option>
+                <option value="none">Sin base ni subbase</option>
+              </select>
+            </label>
             <label>
               <span id="surfaceDepthLabel">5. Espesor de carpeta asfaltica, D1</span>
               <input id="asphaltDepth" type="range" min="4" max="50" step="0.5" value="8" />
               <output for="asphaltDepth" id="asphaltDepthOut">8.0 cm</output>
             </label>
-            <label>
+            <label id="baseDepthWrap">
               <span id="baseDepthLabel">6. Espesor de base granular, D2</span>
               <input id="baseDepth" type="range" min="10" max="50" step="0.5" value="50" />
               <output for="baseDepth" id="baseDepthOut">50.0 cm</output>
             </label>
-            <label>
+            <label id="subbaseDepthWrap">
               Subbase, D3 (cm)
               <input id="subbaseDepth" type="range" min="0" max="50" step="0.5" value="40" />
               <output for="subbaseDepth" id="subbaseDepthOut">40.0 cm</output>
             </label>
-            <label>
-              Coeficiente a1
-              <input id="a1" type="number" min="0.05" max="0.25" step="0.005" value="0.170" />
-            </label>
-            <label>
-              Coeficiente a2
-              <input id="a2" type="number" min="0.02" max="0.08" step="0.005" value="0.055" />
-            </label>
-            <label>
-              Coeficiente a3
-              <input id="a3" type="number" min="0.02" max="0.07" step="0.005" value="0.043" />
-            </label>
+            <div id="structuralCoeffFields" class="control-group">
+              <label>
+                Coeficiente a1
+                <input id="a1" type="number" min="0.05" max="0.25" step="0.005" value="0.170" />
+              </label>
+              <label id="a2Wrap">
+                Coeficiente a2
+                <input id="a2" type="number" min="0.02" max="0.08" step="0.005" value="0.055" />
+              </label>
+              <label id="a3Wrap">
+                Coeficiente a3
+                <input id="a3" type="number" min="0.02" max="0.07" step="0.005" value="0.043" />
+              </label>
+            </div>
             <label>
               CBR subrasante (%)
               <input id="cbr" type="range" min="2" max="25" step="0.5" value="8" />
@@ -202,6 +216,7 @@
             </div>
             <div class="mode-settings hidden" id="rigidSettings">
               <h2>Parámetros de pavimento rígido</h2>
+              <p class="field-note">El soporte se estima como modulo k a partir del CBR y las capas de apoyo activas.</p>
               <label>
                 Transferencia de carga, J
                 <select id="rigidLoadTransfer">
@@ -211,9 +226,14 @@
                   <option value="4.0">J = 4.0, sin pasadores</option>
                 </select>
               </label>
+              <label>
+                Modulo de rotura del concreto, MR (psi)
+                <input id="concreteModulusRupture" type="number" min="450" max="900" step="10" value="650" />
+              </label>
             </div>
             <div class="mode-settings hidden" id="paverSettings">
               <h2>Parámetros de adoquinado</h2>
+              <p class="field-note">El adoquin + cama de arena se evalua como capa de rodadura equivalente, ajustada por base, confinamiento, CBR, drenaje y serviciabilidad.</p>
               <label>
                 Tipo de base
                 <select id="paverBaseType">
@@ -245,6 +265,7 @@
               Severidad climatica
               <input id="climateSeverity" type="range" min="0" max="100" step="1" value="32" />
               <output for="climateSeverity" id="climateSeverityOut">32</output>
+              <small>Reduce la capacidad estimada y acelera la perdida de serviciabilidad en esta aproximacion.</small>
             </label>
             <label>
               Confiabilidad (%)
@@ -458,7 +479,10 @@
                 <div><strong>Criterio</strong><strong>Uso en el simulador</strong></div>
                 <div><span>EE de diseno</span><span>Demanda acumulada del proyecto en el carril de diseno.</span></div>
                 <div><span>Rango de vias</span><span>Clasifica la via urbana: habilitacion urbana, local, colectora, arterial o expresa.</span></div>
-                <div><span>EE admisible estructura</span><span>Capacidad del paquete segun espesores, CBR, coeficientes, drenaje y serviciabilidad.</span></div>
+                <div><span>EE admisible estructura</span><span>Capacidad del paquete segun espesores, soporte, drenaje, serviciabilidad y parametros del tipo de pavimento.</span></div>
+                <div><span>Consumo de vida</span><span>Daño = EE acumulado / capacidad admisible del pavimento.</span></div>
+                <div><span>Deterioros</span><span>Representacion visual derivada del consumo de vida y perdida de PSI; no es prediccion calibrada de cada falla.</span></div>
+                <div><span>Ambiente</span><span>La severidad climatica penaliza capacidad y acelera la perdida de serviciabilidad.</span></div>
                 <div><span>Cumplimiento</span><span>La estructura cumple si cubre el EE de diseno y el PSI final queda sobre Pt.</span></div>
               </div>
               <div class="guide-grid">
@@ -499,7 +523,7 @@
               <h2>Flujo de uso</h2>
               <ol class="steps">
                 <li>Primero fija el trafico: IMDA, porcentaje de pesados y factor camion.</li>
-                <li>Luego ajusta la estructura: espesores, coeficientes y CBR de subrasante.</li>
+                <li>Luego ajusta la estructura: espesores, soporte y parametros propios del tipo de pavimento.</li>
                 <li>Presiona reproducir o mueve el tiempo para acumular ESAL con los anos.</li>
                 <li>Observa la via: fisuras, ahuellamiento y baches aparecen cuando sube el dano.</li>
                 <li>Compara las graficas: si el consumo llega a 100% o el PSI baja a 2.5, el pavimento falla.</li>

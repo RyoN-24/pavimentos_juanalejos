@@ -269,6 +269,20 @@ label {
   font-weight: 700;
 }
 
+label small,
+.field-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.control-group {
+  display: grid;
+  gap: var(--space-4);
+}
+
 select,
 input[type="number"] {
   width: 100%;
@@ -301,6 +315,10 @@ output {
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
+}
+
+.hidden-layer {
+  display: none !important;
 }
 
 .norm-summary {
@@ -343,11 +361,7 @@ output {
 
 .case-study {
   display: grid;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border: 1px solid #bdd5da;
-  border-radius: var(--radius-sm);
-  background: var(--surface-raised);
+  gap: var(--space-2);
 }
 
 .case-study > div {
@@ -384,6 +398,21 @@ output {
 .case-study button:hover {
   background: var(--primary);
   transform: translateY(-1px);
+}
+
+.case-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.case-actions button:nth-child(2) {
+  background: var(--surface-muted);
+  color: var(--primary-dark);
+}
+
+.case-actions button:nth-child(2):hover {
+  background: var(--primary-soft);
 }
 
 .case-note {
