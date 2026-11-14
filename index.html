@@ -88,9 +88,10 @@
               <span>Tipo recomendado por EE</span>
               <strong id="recommendedUrbanClass">No aplica</strong>
             </div>
-            <div class="norm-summary hidden">
+            <div class="norm-summary">
               <span id="normName">Manual de Carreteras MTC 2014</span>
               <strong id="normValues">Pi 4.00, Pt 2.50, R 85%</strong>
+              <small id="normScope">Alcance del modelo: criterios normativos seleccionados y supuestos internos identificados.</small>
             </div>
             <div class="case-study">
               <div class="case-actions">
@@ -118,8 +119,9 @@
 
           <form class="panel active" id="traffic" autocomplete="off">
             <label>
-              Enfoque de ejes equivalentes
+              Enfoque de demanda
               <select id="trafficMode">
+                <option value="urbanClass">Usar tipo de via urbana</option>
                 <option value="calculated">Calcular EE desde IMDA</option>
                 <option value="direct" selected>Ingresar EE de diseno directamente</option>
               </select>
@@ -467,6 +469,70 @@
               </div>
               <canvas id="psiCanvas" width="820" height="260" aria-label="Grafica de serviciabilidad PSI"></canvas>
             </section>
+            <section class="explain-card predictive-card" aria-labelledby="predictiveTitle">
+              <div class="predictive-heading">
+                <div>
+                  <p class="eyebrow">Módulo experimental de inteligencia artificial</p>
+                  <h2 id="predictiveTitle">Proyección predictiva del PCI</h2>
+                  <p>Estima el cambio anual y el PCI futuro de un tramo asfáltico urbano. Funciona separado del cálculo normativo de espesores, EE y serviciabilidad.</p>
+                </div>
+                <span class="model-chip" id="pciModelStatus">Cargando modelo</span>
+              </div>
+              <form class="predictive-form" id="pciPredictionForm">
+                <label>
+                  PCI actual (obligatorio)
+                  <input id="pciCurrent" type="number" min="0" max="100" step="1" value="80" required />
+                </label>
+                <label>
+                  Horizonte de proyección (años, obligatorio)
+                  <input id="pciHorizon" type="number" min="0.25" max="20" step="0.25" value="3" required />
+                </label>
+                <label>
+                  Longitud del tramo (m)
+                  <input id="pciSegmentLength" type="number" min="1" step="1" value="100" />
+                </label>
+                <details class="predictive-history">
+                  <summary>Agregar historial del tramo para mejorar el contexto</summary>
+                  <div>
+                    <label>
+                      PCI anterior
+                      <input id="pciPrevious" type="number" min="0" max="100" step="1" />
+                    </label>
+                    <label>
+                      Cambio anual anterior (puntos/año)
+                      <input id="pciPreviousDelta" type="number" min="-50" max="50" step="0.1" />
+                    </label>
+                    <label>
+                      Años desde la medición anterior
+                      <input id="pciYearsPrevious" type="number" min="0.25" max="20" step="0.25" />
+                    </label>
+                  </div>
+                </details>
+                <button type="submit" id="predictPci">Proyectar PCI</button>
+              </form>
+              <div class="predictive-result" id="pciPredictionResult" aria-live="polite">
+                <div>
+                  <span>PCI proyectado</span>
+                  <strong id="pciFuture">—</strong>
+                </div>
+                <div>
+                  <span>Cambio anual</span>
+                  <strong id="pciAnnualDelta">—</strong>
+                </div>
+                <div>
+                  <span>Condición estimada</span>
+                  <strong id="pciCondition">—</strong>
+                </div>
+                <div>
+                  <span>Tiempo simulado hasta PCI 40</span>
+                  <strong id="pciRemainingLife">—</strong>
+                </div>
+                <p id="pciPredictionMessage">Completa los datos y selecciona “Proyectar PCI”.</p>
+              </div>
+              <aside class="predictive-disclaimer">
+                <strong>Alcance:</strong> modelo XGBoost entrenado con 16 104 pares de observaciones urbanas de Washington D. C. (2019–2024). Error temporal 2024: MAE 6.32 puntos PCI. La validación externa en San Diego obtuvo MAE 17.73, por lo que esta salida es exploratoria y requiere calibración con datos peruanos. El tiempo hasta PCI 40 supone una tasa anual constante y no acredita vida útil real. Los horizontes mayores de cuatro años extrapolan fuera de los intervalos observados. No sustituye la inspección PCI ni el diseño definitivo.
+              </aside>
+            </section>
             <section class="explain-card">
               <h2>Calculo EE paso a paso</h2>
               <div class="calc-steps" id="esalSteps">
@@ -546,6 +612,7 @@
       </section>
     </main>
 
+    <script src="pci-predictor.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

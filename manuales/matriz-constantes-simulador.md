@@ -63,42 +63,19 @@ Si hay valores hardcodeados. No todos son un problema:
 3. Defaults editables de ejemplo.
 4. Limites normativos de mezcla fria, tratamiento superficial y catalogo MTC.
 
-## Recomendacion de arquitectura
+## Arquitectura implementada
 
-Crear luego un archivo estructurado:
+Se creo el archivo estructurado:
 
 `manuales/datos-normativos.json`
 
-Con esta forma:
-
-```json
-{
-  "id": "mtc_2014_tp_classes",
-  "scope": "road_mtc",
-  "source": "manual-mtc-suelos-pavimentos-2014-oficial.pdf",
-  "table": "Clasificacion TP",
-  "status": "normative",
-  "values": []
-}
-```
-
-Y otro bloque para supuestos internos:
-
-```json
-{
-  "id": "simulation_internal_factors",
-  "scope": "simulator",
-  "status": "internal_assumption",
-  "values": [],
-  "warning": "No presentar como norma."
-}
-```
+El catalogo separa fuentes oficiales, datasets normativos, metodos sugeridos CE.010 y supuestos internos. Las pruebas automaticas leen este archivo y comparan sus valores clave contra la data que usa `script.js`.
 
 ## Checklist para la siguiente auditoria
 
-- [ ] Cada valor normativo tiene fuente, alcance y tabla/pagina.
-- [ ] Cada supuesto interno aparece como aproximacion en UI o reporte.
-- [ ] CE.010 adoquines no se aplica a flexible o rigido.
-- [ ] CE.010 rigido no se presenta como equivalente al flujo AASHTO.
+- [x] Cada valor normativo tiene fuente, alcance y tabla/pagina.
+- [x] Cada supuesto interno aparece como aproximacion en UI o reporte.
+- [x] CE.010 adoquines no se aplica a flexible o rigido.
+- [x] CE.010 rigido no se presenta como equivalente al flujo AASHTO.
 - [ ] Los defaults de ejemplo no aparecen como datos del proyecto final.
-- [ ] Los deterioros visuales siguen declarados como referenciales.
+- [x] Los deterioros visuales siguen declarados como referenciales.

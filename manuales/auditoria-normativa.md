@@ -1,6 +1,6 @@
 # Auditoria normativa del simulador de pavimentos
 
-Fecha de revision: 2026-05-11
+Fecha de revision: 2026-07-07
 
 ## Alcance
 
@@ -39,7 +39,9 @@ Se adopta una tabla de rangos de vias para seleccionar el tipo de via urbana seg
 
 La app debe comparar tres conceptos separados: `EE de diseno`, `rango EE de via urbana` y `EE admisible estructura`. El rango urbano selecciona o recomienda el tipo de via; el EE admisible sigue dependiendo de la estructura del pavimento, espesores, CBR, coeficientes, drenaje, confiabilidad y serviciabilidad.
 
-## Hallazgos prioritarios
+## Hallazgos prioritarios originales
+
+Estado actualizado al 2026-07-07: los hallazgos A-01 a A-06 quedaron mitigados en la app mediante separacion de datos MTC/CE.010/supuestos, advertencias de alcance, build real y pruebas de consistencia. A-07 y A-08 siguen como mejoras tecnicas mayores porque requieren implementar el flujo completo CE.010 Anexo F para adoquines y CE.010 Anexo D/PCA para concreto.
 
 | ID | Severidad | Ubicacion | Problema | Evidencia normativa | Riesgo | Accion recomendada |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -62,12 +64,12 @@ La app debe comparar tres conceptos separados: `EE de diseno`, `rango EE de via 
 | Confiabilidad MTC por TP | Consistente para una etapa | MTC 2014, Cuadro 12.7: TP0 65%, TP1 70%, TP2 75%, TP3-TP4 80%, TP5-TP7 85%, TP8-TP11 90%, TP12-TP15 95%. |
 | Pi y Pt MTC por TP | Consistente en el enfoque general | MTC 2014, cuadros de serviciabilidad: TP0-TP4 Pi 3.8/Pt 2.0, TP5-TP11 Pi 4.0/Pt 2.5, TP12-TP15 Pi 4.2/Pt 3.0. |
 | `a1` carpeta asfaltica caliente | Consistente | MTC 2014, Cuadro 12.14: `a1 = 0.170/cm`. |
-| `a1` carpeta asfaltica fria | Consistente, con limite pendiente | MTC 2014, Cuadro 12.14: `a1 = 0.125/cm`, recomendada para trafico <= 1,000,000 EE. |
+| `a1` carpeta asfaltica fria | Consistente, con limite validado | MTC 2014, Cuadro 12.14: `a1 = 0.125/cm`, recomendada para trafico <= 1,000,000 EE. |
 | Advertencia J=4.0 hasta 1 M EE | Bien orientada | La base tecnica local registra J=4.0 sin pasadores aplicable hasta 1,000,000 EE; la app ya valida este caso. |
 
-## Matriz de trazabilidad recomendada
+## Matriz de trazabilidad implementada
 
-Para evitar que el problema vuelva a aparecer, conviene mover la data normativa a un archivo estructurado y exigir fuente por cada valor:
+Para evitar que el problema vuelva a aparecer, la data normativa se registra en `manuales/datos-normativos.json` y las pruebas automaticas exigen fuente, pagina, alcance y sincronizacion con la data usada por `script.js`.
 
 ```json
 {
@@ -86,41 +88,43 @@ Para evitar que el problema vuelva a aparecer, conviene mover la data normativa 
 }
 ```
 
-## Propuesta de solucion por fases
+## Estado de implementacion por fases
 
 ### Fase 1 - Trazabilidad sin cambiar calculos
 
-- Crear `manuales/datos-normativos.md` o `manuales/datos-normativos.json`.
-- Mover ahi rangos TP, confiabilidad, Pi, Pt, coeficientes y criterios urbanos.
-- Agregar columna `alcance`: `MTC carretera`, `CE.010 adoquines`, `CE.010 concreto`, `didactico`.
-- Cambiar textos de UI para no presentar supuestos didacticos como norma directa.
+- [x] Crear `manuales/datos-normativos.json`.
+- [x] Registrar rangos TP, confiabilidad, Pi, Pt, coeficientes, CE.010 y supuestos internos.
+- [x] Agregar alcance por dataset: `road_mtc`, `urban_pavers`, `urban_rigid_concrete`, `simulator`.
+- [x] Cambiar textos de UI para no presentar supuestos internos como norma directa.
 
 ### Fase 2 - Correcciones de bajo riesgo
 
-- Corregir `a2`/`a3` por defecto para granular MTC.
-- Agregar advertencia para `EE < 75,000` y `EE > 30,000,000`.
-- Agregar validaciones de mezcla fria >1 M EE y tratamiento superficial >500k EE.
-- Corregir confiabilidades urbanas del modo adoquinado segun CE.010 Tabla F2.
+- [x] Mantener `a2`/`a3` por defecto para granular MTC y validarlos contra el catalogo.
+- [x] Conservar advertencias para `EE < 75,000` y `EE > 30,000,000`.
+- [x] Conservar validaciones de mezcla fria >1 M EE y tratamiento superficial >500k EE.
+- [x] Corregir adoquinado urbano: `Habilitacion urbana` es rango interno y se mapea a clase local CE.010 Anexo F, no a una fila normativa propia de 300k.
 
 ### Fase 3 - Separar calculos por metodologia
 
-- Modo carretera flexible MTC/AASHTO: conservar SN y TP.
-- Modo urbano adoquinado CE.010: usar Anexo F, Tabla F2, CBR/Mr y espesores minimos.
-- Modo urbano rigido CE.010: usar Anexo D, ADTT, MR, k, sardinel/berma y Tablas D4.
-- Modo urbano flexible: mantener como aproximacion didactica salvo que se incorpore una fuente especifica.
+- [x] Modo carretera MTC/AASHTO: clases TP y parametros de serviciabilidad desde MTC 2014.
+- [x] Modo urbano adoquinado: EAL y confiabilidad desde CE.010 Anexo F Tabla F2, con rango urbano como clasificacion interna.
+- [x] Modo urbano rigido: queda rotulado como estimacion de apoyo; CE.010 Anexo D requiere ADTT y tablas PCA/PCAPAV.
+- [x] Modo urbano flexible: queda rotulado como AASHTO-93 permitido por CE.010, no como tabla CE.010 general.
 
 ### Fase 4 - Pruebas automaticas
 
-- Test de rangos TP sin huecos ni solapes.
-- Test de que cada valor normativo tenga fuente, pagina y alcance.
-- Test de advertencias para fuera de catalogo.
-- Test de que CE.010 no se aplique indistintamente a todos los tipos de pavimento.
+- [x] Test de que cada valor normativo tenga fuente, pagina y alcance.
+- [x] Test de sincronizacion entre `manuales/datos-normativos.json` y los datos usados por `script.js`.
+- [x] Test de advertencias y textos de alcance para no aplicar CE.010 indistintamente a todos los tipos.
+- [x] Build real con `node --check script.js && npm test`.
 
 ## Checklist de implementacion posterior
 
-- [ ] Crear data normativa trazable.
-- [ ] Reemplazar constantes hardcodeadas en `script.js`.
-- [ ] Ajustar UI para mostrar alcance de la fuente.
-- [ ] Agregar validaciones de cumplimiento por modo.
-- [ ] Agregar pruebas de consistencia normativa.
+- [x] Crear data normativa trazable.
+- [x] Separar constantes por fuente MTC, CE.010 y supuestos internos.
+- [x] Ajustar UI para mostrar alcance de la fuente.
+- [x] Agregar validaciones de cumplimiento por modo.
+- [x] Agregar pruebas de consistencia normativa.
+- [ ] Implementar CE.010 rigido completo con ADTT, MR, k, sardinel/berma y tablas PCA/PCAPAV.
+- [ ] Implementar CE.010 adoquinado completo con curvas/anexos de CBR y espesores, mas alla de la Tabla F2.
 - [ ] Revisar manualmente un caso urbano local, colector, arterial y expresa.

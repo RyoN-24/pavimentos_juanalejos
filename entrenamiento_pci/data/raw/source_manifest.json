@@ -1,0 +1,59 @@
+{
+  "downloaded_at_utc": "2026-10-13T03:14:50.915908+00:00",
+  "sources": {
+    "dc_pci_2019.csv": {
+      "source_url": "https://rh.dcgis.dc.gov/dcgis/rest/services/DDOT/PavementConditionIndex/FeatureServer/6",
+      "layer_name": "Pavement Condition Index FY-19",
+      "record_count": 13170,
+      "field_count": 11,
+      "sha256": "99a8c32ce2f2569690bb39f95c3531fe557329ba2a41f1ba03ca407833421277"
+    },
+    "dc_pci_2020.csv": {
+      "source_url": "https://rh.dcgis.dc.gov/dcgis/rest/services/DDOT/PavementConditionIndex/FeatureServer/8",
+      "layer_name": "Pavement Condition Index FY-20",
+      "record_count": 12743,
+      "field_count": 11,
+      "sha256": "69cf9471a935f02a84130140ee1cd4d64a047abb3c143b3d2bc9f0693ce3da96"
+    },
+    "dc_pci_2021.csv": {
+      "source_url": "https://rh.dcgis.dc.gov/dcgis/rest/services/DDOT/PavementConditionIndex/FeatureServer/10",
+      "layer_name": "Pavement Condition Index FY-21",
+      "record_count": 13919,
+      "field_count": 11,
+      "sha256": "5749031bee3c13cef17b74e4ef2cc31f39e02736116568b942923c030902fc58"
+    },
+    "dc_pci_2022.csv": {
+      "source_url": "https://rh.dcgis.dc.gov/dcgis/rest/services/DDOT/PavementConditionIndex/FeatureServer/12",
+      "layer_name": "Pavement Condition Index FY-22",
+      "record_count": 13372,
+      "field_count": 13,
+      "sha256": "a05e8148c7cadeb775a6aabc23368466b04b11553cc2cda225a53f7338f8d1aa"
+    },
+    "dc_pci_2023.csv": {
+      "source_url": "https://rh.dcgis.dc.gov/dcgis/rest/services/DDOT/PavementConditionIndex/FeatureServer/13",
+      "layer_name": "Pavement Condition Index FY-23",
+      "record_count": 12651,
+      "field_count": 54,
+      "sha256": "8e32852c06076b4887b162ed4be150619992d35f236d5fdd873cc2a47c8f5608"
+    },
+    "dc_pci_2024.csv": {
+      "source_url": "https://rh.dcgis.dc.gov/dcgis/rest/services/DDOT/PavementConditionIndex/FeatureServer/14",
+      "layer_name": "Pavement Condition Index FY-24",
+      "record_count": 6235,
+      "field_count": 54,
+      "sha256": "693018515ce9a4a34f56a25a912a82b26a7c8564dd5808733cc350ae95d6296e"
+    },
+    "san_diego_pci_2016.csv": {
+      "source_url": "https://seshat.datasd.org/pavement_condition_assessment/pavement_condition_assessment_2016_datasd.csv",
+      "record_count": 32492,
+      "field_count": 3,
+      "sha256": "8f0c878f5fa3e2e40577cce33f2f257febd20c6502d39117a9f8df03b75b5bec"
+    },
+    "san_diego_pci_2023.csv": {
+      "source_url": "https://seshat.datasd.org/pavement_condition_assessment/pavement_condition_assessment_2023_datasd.csv",
+      "record_count": 32492,
+      "field_count": 3,
+      "sha256": "8547403c3037ad947027b985f1a5610ec8a9c1b3f72e687df55d89597f07772e"
+    }
+  }
+}

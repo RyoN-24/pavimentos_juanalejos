@@ -1,0 +1,137 @@
+{
+  "selected_model": "xgboost",
+  "selection_criterion": "lowest grouped cross-validation MAE",
+  "features": [
+    "pci_current",
+    "pci_previous",
+    "previous_annual_delta",
+    "years_since_previous",
+    "segment_length"
+  ],
+  "training_rows": 12132,
+  "training_segments": 10054,
+  "temporal_test_rows_2024": 3972,
+  "external_validation_rows_san_diego": 21347,
+  "grouped_cross_validation": {
+    "persistence": {
+      "folds": 3,
+      "n_total": 12132,
+      "mae_mean": 6.5682131668912165,
+      "mae_std": 0.06050074262233011,
+      "rmse_mean": 9.42009830240166,
+      "rmse_std": 0.12698570624308822,
+      "r2_mean": 0.7786479034493051,
+      "r2_std": 0.006420723319061629,
+      "bias_mean": 5.537668655539974,
+      "bias_std": 0.060670464773908514
+    },
+    "linear_regression": {
+      "folds": 3,
+      "n_total": 12132,
+      "mae_mean": 5.7614146856868125,
+      "mae_std": 0.06600259994507295,
+      "rmse_mean": 7.688095059502867,
+      "rmse_std": 0.12855927710460396,
+      "r2_mean": 0.8526320600790842,
+      "r2_std": 0.0014113914496615178,
+      "bias_mean": -0.6067064983241897,
+      "bias_std": 0.03870296845487038,
+      "annual_delta_mae_mean": 4.617081522510204,
+      "annual_delta_mae_std": 0.020741181192950105
+    },
+    "random_forest": {
+      "folds": 3,
+      "n_total": 12132,
+      "mae_mean": 5.811198236386139,
+      "mae_std": 0.08457326714477335,
+      "rmse_mean": 7.869739955254803,
+      "rmse_std": 0.0859674829582306,
+      "r2_mean": 0.84545185911034,
+      "r2_std": 0.006058406922834659,
+      "bias_mean": -0.6899416292790798,
+      "bias_std": 0.09662590696164604,
+      "annual_delta_mae_mean": 4.562380046502223,
+      "annual_delta_mae_std": 0.05177122077334372
+    },
+    "xgboost": {
+      "folds": 3,
+      "n_total": 12132,
+      "mae_mean": 5.75420693593652,
+      "mae_std": 0.08209334967687477,
+      "rmse_mean": 7.745294186646351,
+      "rmse_std": 0.08854818918784434,
+      "r2_mean": 0.8503620291597694,
+      "r2_std": 0.004029160595052672,
+      "bias_mean": -0.6789553838143546,
+      "bias_std": 0.06463349925675577,
+      "annual_delta_mae_mean": 4.538278766761657,
+      "annual_delta_mae_std": 0.04480311796559615
+    }
+  },
+  "temporal_test_2024": {
+    "persistence": {
+      "n": 3972,
+      "mae": 7.113519637462236,
+      "rmse": 10.09198965947791,
+      "r2": 0.6316859713784754,
+      "bias": 6.351837865055388
+    },
+    "linear_regression": {
+      "n": 3972,
+      "mae": 6.097395710623918,
+      "rmse": 7.954691616135246,
+      "r2": 0.771170841904353,
+      "bias": 0.5059391252586717,
+      "annual_delta_mae": 6.100630271201805
+    },
+    "random_forest": {
+      "n": 3972,
+      "mae": 6.282138889908274,
+      "rmse": 8.283115898355812,
+      "r2": 0.7518855012093009,
+      "bias": 1.4947933898713186,
+      "annual_delta_mae": 6.282138889908274
+    },
+    "xgboost": {
+      "n": 3972,
+      "mae": 6.324216874496199,
+      "rmse": 8.316936361682682,
+      "r2": 0.7498552317793528,
+      "bias": 1.0818805576475385,
+      "annual_delta_mae": 6.326580418419907
+    }
+  },
+  "external_validation_san_diego_2016_2023": {
+    "persistence": {
+      "n": 21347,
+      "mae": 20.20877219281398,
+      "rmse": 25.980706744248174,
+      "r2": -0.01383481099074979,
+      "bias": 19.804322855670588
+    },
+    "linear_regression": {
+      "n": 21347,
+      "mae": 17.457680016323387,
+      "rmse": 20.734579683140737,
+      "r2": 0.35426288433865916,
+      "bias": -11.257019367600426,
+      "annual_delta_mae": 2.7197094486903572
+    },
+    "random_forest": {
+      "n": 21347,
+      "mae": 19.34651478880795,
+      "rmse": 23.318330458676325,
+      "r2": 0.18330446230519992,
+      "bias": -12.721087364567902,
+      "annual_delta_mae": 2.794437298172019
+    },
+    "xgboost": {
+      "n": 21347,
+      "mae": 17.73023035223626,
+      "rmse": 21.501185217668752,
+      "r2": 0.30563139260244854,
+      "bias": -10.717014592756804,
+      "annual_delta_mae": 2.5500306880920918
+    }
+  }
+}

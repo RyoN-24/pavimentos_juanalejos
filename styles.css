@@ -336,6 +336,13 @@ output {
   line-height: 1.35;
 }
 
+.norm-summary small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .urban-recommendation {
   display: grid;
   gap: var(--space-1);
@@ -1017,6 +1024,172 @@ output {
   gap: var(--space-4);
 }
 
+.predictive-card {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-4);
+  border-top: 5px solid var(--primary);
+  background: linear-gradient(135deg, #ffffff 0, #f1f8fa 100%);
+}
+
+.predictive-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.predictive-heading h2 {
+  margin: 0 0 var(--space-2);
+}
+
+.predictive-heading p {
+  max-width: 78ch;
+}
+
+.predictive-heading .eyebrow {
+  margin-bottom: var(--space-2);
+  color: var(--primary-dark);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.model-chip {
+  flex: 0 0 auto;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid #bdd5da;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.model-chip.ready {
+  border-color: #afd7cd;
+  background: var(--teal-soft);
+  color: #126d5a;
+}
+
+.model-chip.error {
+  border-color: #e9bcbc;
+  background: var(--red-soft);
+  color: #933939;
+}
+
+.predictive-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 75%);
+}
+
+.predictive-form label {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.predictive-form input {
+  width: 100%;
+}
+
+.predictive-history {
+  grid-column: 1 / -1;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.predictive-history summary {
+  cursor: pointer;
+  color: var(--primary-dark);
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.predictive-history > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+#predictPci {
+  grid-column: 1 / -1;
+  min-height: 46px;
+  border: 1px solid var(--primary-dark);
+  border-radius: var(--radius-sm);
+  background: var(--primary-dark);
+  color: #fff;
+  font-weight: 850;
+}
+
+#predictPci:hover {
+  background: var(--primary);
+}
+
+#predictPci:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.predictive-result {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.predictive-result > div {
+  min-height: 92px;
+  display: grid;
+  align-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.predictive-result span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.predictive-result strong {
+  color: var(--primary-dark);
+  font-size: 1.55rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.predictive-result p {
+  grid-column: 1 / -1;
+  padding: var(--space-3);
+  border-left: 4px solid var(--primary);
+  background: var(--primary-soft);
+}
+
+.predictive-disclaimer {
+  padding: var(--space-4);
+  border: 1px solid #e6c879;
+  border-radius: var(--radius-md);
+  background: var(--amber-soft);
+  color: #66460e;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
 .chart-card,
 .explain-card {
   padding: var(--space-4);
@@ -1329,6 +1502,10 @@ body[data-pavement="pavers"] .asphalt-layer {
     grid-template-columns: minmax(0, 1fr) minmax(280px, 0.65fr);
   }
 
+  .metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .toolbar {
     grid-row: span 2;
   }
@@ -1389,8 +1566,21 @@ body[data-pavement="pavers"] .asphalt-layer {
   .metrics,
   .compare-actions,
   .compare-grid,
-  .guide-grid {
+  .guide-grid,
+  .predictive-form,
+  .predictive-result,
+  .predictive-history > div {
     grid-template-columns: 1fr;
+  }
+
+  .predictive-heading {
+    flex-direction: column;
+  }
+
+  .predictive-result p,
+  .predictive-history,
+  #predictPci {
+    grid-column: 1;
   }
 
   .hero-copy {

@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-07-07",
+  "purpose": "Catalogo trazable de datos normativos, metodos sugeridos, mejoras tecnicas pendientes y supuestos internos usados por el simulador.",
+  "sources": {
+    "mtc_sggp_2014": {
+      "title": "Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos - Seccion Suelos y Pavimentos",
+      "authority": "Ministerio de Transportes y Comunicaciones",
+      "approval": "RD 10-2014-MTC/14",
+      "localFile": "manuales/manual-mtc-suelos-pavimentos-2014-oficial.pdf",
+      "officialUrl": "https://www.gob.pe/institucion/mtc/normas-legales/4441297-10-2014-mtc-14",
+      "status": "normative"
+    },
+    "mtc_eg_2013": {
+      "title": "Manual de Carreteras: Especificaciones Tecnicas Generales para Construccion EG-2013",
+      "authority": "Ministerio de Transportes y Comunicaciones",
+      "approval": "RD 22-2013-MTC/14",
+      "localFile": "manuales/manual-mtc-eg-2013.pdf",
+      "officialUrl": "https://www.gob.pe/institucion/mtc/normas-legales/4438760-22-2013-mtc-14",
+      "status": "normative"
+    },
+    "ce010_2010": {
+      "title": "Norma CE.010 Pavimentos Urbanos del Reglamento Nacional de Edificaciones",
+      "authority": "Ministerio de Vivienda, Construccion y Saneamiento",
+      "approval": "DS 001-2010-VIVIENDA",
+      "localFile": "manuales/norma-ce-010-pavimentos-urbanos.pdf",
+      "officialUrl": "https://www.gob.pe/institucion/vivienda/informes-publicaciones/2309793-reglamento-nacional-de-edificaciones-rne",
+      "status": "normative"
+    },
+    "project_audit": {
+      "title": "Auditoria normativa y matriz de constantes del proyecto",
+      "authority": "Proyecto local",
+      "localFiles": [
+        "manuales/auditoria-normativa.md",
+        "manuales/matriz-constantes-simulador.md"
+      ],
+      "status": "internal_review"
+    }
+  },
+  "datasets": [
+    {
+      "id": "mtc_2014_paved_traffic_classes",
+      "status": "normative",
+      "scope": "road_mtc",
+      "sourceRef": "mtc_sggp_2014",
+      "pdfPage": 75,
+      "documentPage": 74,
+      "table": "Cuadro 6.15",
+      "units": "EE de 8.2 t en carril de diseno",
+      "notes": "TP15 mayor a 30,000,000 EE requiere estudio especifico.",
+      "values": [
+        { "id": "TP0", "minExclusive": 75000, "maxInclusive": 150000 },
+        { "id": "TP1", "minExclusive": 150000, "maxInclusive": 300000 },
+        { "id": "TP2", "minExclusive": 300000, "maxInclusive": 500000 },
+        { "id": "TP3", "minExclusive": 500000, "maxInclusive": 750000 },
+        { "id": "TP4", "minExclusive": 750000, "maxInclusive": 1000000 },
+        { "id": "TP5", "minExclusive": 1000000, "maxInclusive": 1500000 },
+        { "id": "TP6", "minExclusive": 1500000, "maxInclusive": 3000000 },
+        { "id": "TP7", "minExclusive": 3000000, "maxInclusive": 5000000 },
+        { "id": "TP8", "minExclusive": 5000000, "maxInclusive": 7500000 },
+        { "id": "TP9", "minExclusive": 7500000, "maxInclusive": 10000000 },
+        { "id": "TP10", "minExclusive": 10000000, "maxInclusive": 12500000 },
+        { "id": "TP11", "minExclusive": 12500000, "maxInclusive": 15000000 },
+        { "id": "TP12", "minExclusive": 15000000, "maxInclusive": 20000000 },
+        { "id": "TP13", "minExclusive": 20000000, "maxInclusive": 25000000 },
+        { "id": "TP14", "minExclusive": 25000000, "maxInclusive": 30000000 },
+        { "id": "TP15", "minExclusive": 30000000, "maxInclusive": null }
+      ]
+    },
+    {
+      "id": "mtc_2014_reliability_single_stage",
+      "status": "normative",
+      "scope": "road_mtc_flexible",
+      "sourceRef": "mtc_sggp_2014",
+      "pdfPage": 124,
+      "documentPage": 123,
+      "table": "Cuadro 12.6",
+      "units": "percent",
+      "values": [
+        { "trafficClasses": ["TP0"], "reliability": 65 },
+        { "trafficClasses": ["TP1"], "reliability": 70 },
+        { "trafficClasses": ["TP2"], "reliability": 75 },
+        { "trafficClasses": ["TP3", "TP4"], "reliability": 80 },
+        { "trafficClasses": ["TP5", "TP6", "TP7"], "reliability": 85 },
+        { "trafficClasses": ["TP8", "TP9", "TP10", "TP11"], "reliability": 90 },
+        { "trafficClasses": ["TP12", "TP13", "TP14", "TP15"], "reliability": 95 }
+      ]
+    },
+    {
+      "id": "mtc_2014_serviceability_pi_pt",
+      "status": "normative",
+      "scope": "road_mtc_flexible",
+      "sourceRef": "mtc_sggp_2014",
+      "pdfPages": [127, 128],
+      "documentPages": [126, 127],
+      "tables": ["Cuadro 12.10", "Cuadro 12.11"],
+      "units": "PSI",
+      "values": [
+        { "trafficClasses": ["TP0", "TP1", "TP2", "TP3", "TP4"], "pi": 3.8, "pt": 2.0 },
+        { "trafficClasses": ["TP5", "TP6", "TP7", "TP8", "TP9", "TP10", "TP11"], "pi": 4.0, "pt": 2.5 },
+        { "trafficClasses": ["TP12", "TP13", "TP14", "TP15"], "pi": 4.2, "pt": 3.0 }
+      ]
+    },
+    {
+      "id": "mtc_2014_structural_coefficients",
+      "status": "normative",
+      "scope": "road_mtc_flexible",
+      "sourceRef": "mtc_sggp_2014",
+      "pdfPage": 130,
+      "documentPage": 129,
+      "table": "Cuadro 12.13",
+      "units": "coeficiente estructural por cm",
+      "values": [
+        { "component": "hot_asphalt_surface", "coefficient": "a1", "value": 0.17, "trafficScope": "all" },
+        { "component": "cold_asphalt_surface", "coefficient": "a1", "value": 0.125, "maxEsal": 1000000 },
+        { "component": "microsurfacing_25mm", "coefficient": "a1", "value": 0.13, "maxEsal": 1000000 },
+        { "component": "surface_treatment_bicapa", "coefficient": "a1", "value": null, "maxEsal": 500000, "note": "No se considera por no tener aporte estructural." },
+        { "component": "granular_base_cbr_80", "coefficient": "a2", "value": 0.052, "maxEsal": 10000000 },
+        { "component": "granular_base_cbr_100", "coefficient": "a2", "value": 0.054, "minEsalExclusive": 10000000 },
+        { "component": "asphalt_treated_base", "coefficient": "a2a", "value": 0.115 },
+        { "component": "cement_treated_base", "coefficient": "a2b", "value": 0.07 },
+        { "component": "lime_treated_base", "coefficient": "a2c", "value": 0.08 },
+        { "component": "granular_subbase_cbr_40", "coefficient": "a3", "value": 0.047 }
+      ]
+    },
+    {
+      "id": "mtc_2014_flexible_minimum_thickness",
+      "status": "normative",
+      "scope": "road_mtc_flexible",
+      "sourceRef": "mtc_sggp_2014",
+      "pdfPage": 134,
+      "documentPage": 133,
+      "table": "Cuadro 12.17",
+      "units": "mm",
+      "values": [
+        { "trafficClass": "TP1", "hotAsphalt": 50, "coldAsphalt": 50, "baseGranular": 150 },
+        { "trafficClass": "TP2", "hotAsphalt": 60, "coldAsphalt": 60, "baseGranular": 150 },
+        { "trafficClass": "TP3", "hotAsphalt": 70, "coldAsphalt": 60, "baseGranular": 150 },
+        { "trafficClass": "TP4", "hotAsphalt": 80, "coldAsphalt": 70, "baseGranular": 200 },
+        { "trafficClass": "TP5", "hotAsphalt": 80, "baseGranular": 200 },
+        { "trafficClass": "TP6", "hotAsphalt": 90, "baseGranular": 200 },
+        { "trafficClass": "TP7", "hotAsphalt": 90, "baseGranular": 200 },
+        { "trafficClass": "TP8", "hotAsphalt": 100, "baseGranular": 250 }
+      ],
+      "notes": "La tabla continua para traficos mayores; completar al implementar catalogos por TP."
+    },
+    {
+      "id": "ce010_urban_design_methods",
+      "status": "normative",
+      "scope": "urban_all_pavements",
+      "sourceRef": "ce010_2010",
+      "pdfPage": 30,
+      "section": "4.1 Metodo de diseno",
+      "values": [
+        { "method": "Instituto del Asfalto", "allowed": true },
+        { "method": "AASHTO-93", "allowed": true },
+        { "method": "PCA", "allowed": true },
+        { "method": "Anexo B", "scope": "urban_asphalt", "allowed": true },
+        { "method": "Anexo D", "scope": "urban_concrete", "allowed": true },
+        { "method": "Anexo F", "scope": "urban_pavers", "allowed": true }
+      ],
+      "notes": "CE.010 permite metodos racionales y alternativamente los anexos sugeridos."
+    },
+    {
+      "id": "ce010_urban_rigid_design_factors",
+      "status": "suggested_method",
+      "scope": "urban_rigid_concrete",
+      "sourceRef": "ce010_2010",
+      "pdfPage": 55,
+      "annex": "D",
+      "values": [
+        "diseno_estructural",
+        "modulo_rotura_mr",
+        "modulo_k",
+        "clasificacion_calles_urbanas",
+        "adtt",
+        "periodo_diseno",
+        "sardineles_integrales",
+        "juntas"
+      ],
+      "notes": "El anexo D usa PCA/PCAPAV y ADTT; no debe presentarse como equivalente directo a una verificacion solo por EE."
+    },
+    {
+      "id": "ce010_urban_rigid_k_values",
+      "status": "suggested_method",
+      "scope": "urban_rigid_concrete",
+      "sourceRef": "ce010_2010",
+      "pdfPage": 56,
+      "table": "Tabla D1",
+      "units": "pci",
+      "values": [
+        { "soilSupport": "bajo", "kRangePci": [75, 120] },
+        { "soilSupport": "medio", "kRangePci": [130, 170] },
+        { "soilSupport": "alto", "kRangePci": [180, 220] }
+      ]
+    },
+    {
+      "id": "ce010_urban_rigid_adtt_classes",
+      "status": "suggested_method",
+      "scope": "urban_rigid_concrete",
+      "sourceRef": "ce010_2010",
+      "pdfPages": [58, 59, 62, 63],
+      "tables": ["Tabla D4(a)", "Tabla D4(b)"],
+      "units": "ADTT",
+      "values": [
+        { "class": "residencial_ligero", "adttApprox": [2, 4], "rneEquivalent": "vias_locales" },
+        { "class": "residencial", "adttApprox": [10, 50], "rneEquivalent": "vias_locales" },
+        { "class": "colector", "adttApprox": [50, 500], "rneEquivalent": "vias_colectoras" },
+        { "class": "comercial", "adttApprox": [400, 700] },
+        { "class": "arterial_menor", "adttApprox": [300, 600] },
+        { "class": "arterial_mayor", "adttApprox": [700, 1500] }
+      ],
+      "notes": "Para arteriales, colectoras y expresas, CE.010 indica que el PR debe realizar estudio de trafico y modificar espesores segun corresponda."
+    },
+    {
+      "id": "ce010_urban_paver_design_eals",
+      "status": "suggested_method",
+      "scope": "urban_pavers",
+      "sourceRef": "ce010_2010",
+      "pdfPage": 72,
+      "table": "Tabla F2",
+      "units": "EAL",
+      "values": [
+        { "roadClass": "express", "baseEalMillions": 7.5, "reliability": 90, "reliabilityFactor": 3.775, "designEal": 28400000 },
+        { "roadClass": "arterial", "baseEalMillions": 2.8, "reliability": 85, "reliabilityFactor": 2.929, "designEal": 8300000 },
+        { "roadClass": "collector", "baseEalMillions": 1.3, "reliability": 80, "reliabilityFactor": 2.39, "designEal": 3000000 },
+        { "roadClass": "local", "baseEalMillions": 0.43, "reliability": 75, "reliabilityFactor": 2.01, "designEal": 840000 }
+      ],
+      "notes": "Ejemplos basados en 20 anos, 4% de crecimiento y 50% de trafico direccional."
+    },
+    {
+      "id": "ce010_urban_paver_subgrade_conversion",
+      "status": "suggested_method",
+      "scope": "urban_pavers",
+      "sourceRef": "ce010_2010",
+      "pdfPage": 73,
+      "tables": ["Tabla F3", "Tabla F4"],
+      "values": [
+        { "conversion": "1500 psi asumido = 1% CBR" }
+      ]
+    },
+    {
+      "id": "ce010_urban_paver_base_requirements",
+      "status": "suggested_method",
+      "scope": "urban_pavers",
+      "sourceRef": "ce010_2010",
+      "pdfPage": 74,
+      "table": "Tabla F7",
+      "values": [
+        { "layer": "base_granular", "minCbr": 80, "plasticityIndexMax": 6, "liquidLimitMax": 25, "compactionMinPercent": 95, "minThicknessMmBelow500kEal": 100, "minThicknessMmAtOrAbove500kEal": 150 },
+        { "layer": "subbase_granular", "minCbr": 30, "plasticityIndexMax": 10, "liquidLimitMax": 25, "compactionMinPercent": 95, "minThicknessMm": 100 },
+        { "layer": "asphalt_treated_base", "marshallStabilityMinLb": 1800, "minThicknessMm": 75 },
+        { "layer": "cement_treated_base", "unconfinedCompression7dMinPsi": 650, "minThicknessMm": 100 }
+      ]
+    },
+    {
+      "id": "eg2013_paver_construction_requirements",
+      "status": "normative",
+      "scope": "construction_pavers",
+      "sourceRef": "mtc_eg_2013",
+      "pdfPages": [875, 876, 878, 879],
+      "section": "Seccion 440",
+      "values": [
+        { "requirement": "arena_soporte_equivalente_arena_min_percent", "value": 60 },
+        { "requirement": "juntas_adoquines_max_mm", "value": 3 },
+        { "requirement": "confinamiento_penetracion_base_min_cm", "value": 15 },
+        { "requirement": "compactacion_inicial_pasadas_min", "value": 2 },
+        { "requirement": "compactacion_final_pasadas_min", "value": 4 }
+      ]
+    },
+    {
+      "id": "simulation_urban_road_esal_ranges",
+      "status": "internal_classification_criterion",
+      "scope": "urban_classification",
+      "sourceRef": "project_audit",
+      "values": [
+        { "id": "urbanDevelopment", "label": "Habilitacion urbana", "minInclusive": 0, "maxInclusive": 300000 },
+        { "id": "local", "label": "Local", "minInclusive": 300001, "maxInclusive": 840000 },
+        { "id": "collector", "label": "Colectora", "minInclusive": 840001, "maxInclusive": 3000000 },
+        { "id": "arterialMinor", "label": "Arteria menor", "minInclusive": 3000001, "maxInclusive": 8300000 },
+        { "id": "arterialMajor", "label": "Arteria mayor", "minInclusive": 8300001, "maxInclusive": 28400000 },
+        { "id": "express", "label": "Expresa", "minInclusive": 28400001, "maxInclusive": null }
+      ],
+      "warning": "Clasifica demanda urbana por EE. No es capacidad estructural ni tabla CE.010 general."
+    },
+    {
+      "id": "simulation_internal_factors",
+      "status": "internal_assumption",
+      "scope": "simulator",
+      "sourceRef": "project_audit",
+      "values": [
+        { "id": "coldFlexible.capacityFactor", "value": 0.82 },
+        { "id": "coldSurfaceFactors.surfaceTreatment.factor", "value": 0.72 },
+        { "id": "rigidTransferFactors.2.8.factor", "value": 1.15 },
+        { "id": "rigidTransferFactors.3.2.factor", "value": 1.05 },
+        { "id": "rigidTransferFactors.3.8.factor", "value": 0.95 },
+        { "id": "rigidTransferFactors.4.0.factor", "value": 0.78 },
+        { "id": "pavementModes.pavers.capacityFactor", "value": 0.95 },
+        { "id": "paverBaseFactors.granular.factor", "value": 0.95 },
+        { "id": "paverBaseFactors.asphaltTreated.factor", "value": 1.08 },
+        { "id": "paverBaseFactors.cementTreated.factor", "value": 1.15 },
+        { "id": "edgeRestraintFactors.adequate.factor", "value": 1 },
+        { "id": "edgeRestraintFactors.weak.factor", "value": 0.78 },
+        { "id": "rigidSupportKValue", "formula": "max(80, 38 + CBR * 22 + baseCm * 1.6)" },
+        { "id": "flexibleClimatePenalty", "formula": "1 - severity / 220" },
+        { "id": "rigidClimatePenalty", "formula": "1 - severity / 260" },
+        { "id": "psiVisualCurve", "formula": "Pi - serviceLoss * damage^1.15 - climateTerm" }
+      ],
+      "warning": "No presentar como norma. Son aproximaciones internas del simulador."
+    }
+  ]
+}

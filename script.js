@@ -67,6 +67,7 @@ const outputs = {
   nextStep: $("nextStep"),
   normName: $("normName"),
   normValues: $("normValues"),
+  normScope: $("normScope"),
   recommendedUrbanClass: $("recommendedUrbanClass"),
   psiLimitLabel: $("psiLimitLabel"),
   complianceTitle: $("complianceTitle"),
@@ -120,6 +121,16 @@ const saveScenarioB = $("saveScenarioB");
 const exportReport = $("exportReport");
 const loadBaseExample = $("loadBaseExample");
 const newDesign = $("newDesign");
+const pciPredictionForm = $("pciPredictionForm");
+const predictPciButton = $("predictPci");
+const pciModelStatus = $("pciModelStatus");
+const pciFutureOutput = $("pciFuture");
+const pciAnnualDeltaOutput = $("pciAnnualDelta");
+const pciConditionOutput = $("pciCondition");
+const pciRemainingLifeOutput = $("pciRemainingLife");
+const pciPredictionMessage = $("pciPredictionMessage");
+
+let pciBrowserModel = null;
 
 let playing = false;
 let lastFrame = performance.now();
@@ -130,6 +141,56 @@ let playbackTimer = null;
 let lastPavementType = null;
 let activeCaseStudy = null;
 let applyingPreset = false;
+
+function optionalNumber(id) {
+  const raw = $(id).value.trim();
+  return raw === "" ? undefined : Number(raw);
+}
+
+async function loadPciModel() {
+  try {
+    const response = await fetch("modelos/pci-xgboost-browser.json");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    pciBrowserModel = await response.json();
+    pciModelStatus.textContent = "Modelo listo";
+    pciModelStatus.className = "model-chip ready";
+    predictPciButton.disabled = false;
+  } catch (error) {
+    pciModelStatus.textContent = "Modelo no disponible";
+    pciModelStatus.className = "model-chip error";
+    pciPredictionMessage.textContent = "No se pudo cargar el modelo. Abre el simulador desde un servidor web local.";
+    predictPciButton.disabled = true;
+    console.error("No se pudo cargar el modelo PCI", error);
+  }
+}
+
+function projectPci(event) {
+  event.preventDefault();
+  if (!pciBrowserModel) return;
+  try {
+    const result = PciPredictor.predict(pciBrowserModel, {
+      pciCurrent: Number($("pciCurrent").value),
+      horizonYears: Number($("pciHorizon").value),
+      segmentLength: optionalNumber("pciSegmentLength"),
+      pciPrevious: optionalNumber("pciPrevious"),
+      previousAnnualDelta: optionalNumber("pciPreviousDelta"),
+      yearsSincePrevious: optionalNumber("pciYearsPrevious"),
+    });
+    pciFutureOutput.textContent = result.pciFuture.toFixed(1);
+    pciAnnualDeltaOutput.textContent = `${result.annualDelta >= 0 ? "+" : ""}${result.annualDelta.toFixed(2)} puntos/año`;
+    pciConditionOutput.textContent = result.condition;
+    pciRemainingLifeOutput.textContent = result.yearsToTerminal === null
+      ? "No estimada"
+      : result.yearsToTerminal > 20
+        ? "> 20 años"
+        : `${result.yearsToTerminal.toFixed(1)} años`;
+    pciPredictionMessage.textContent = result.warnings.length
+      ? result.warnings.join(" ")
+      : `Proyección experimental a ${result.horizonYears.toFixed(2)} años con historial completo.`;
+  } catch (error) {
+    pciPredictionMessage.textContent = error.message;
+  }
+}
 
 const baseExample = {
   name: "Ejemplo urbano general",
@@ -202,54 +263,70 @@ const pavementModes = {
 };
 
 const normativeData = {
-  mtcTrafficClasses: [
-    { id: "TP0", minEsal: 75001, maxEsal: 150000, reliability: 65, pi: 3.8, pt: 2.0 },
-    { id: "TP1", minEsal: 150001, maxEsal: 300000, reliability: 70, pi: 3.8, pt: 2.0 },
-    { id: "TP2", minEsal: 300001, maxEsal: 500000, reliability: 75, pi: 3.8, pt: 2.0 },
-    { id: "TP3", minEsal: 500001, maxEsal: 750000, reliability: 80, pi: 3.8, pt: 2.0 },
-    { id: "TP4", minEsal: 750001, maxEsal: 1000000, reliability: 80, pi: 3.8, pt: 2.0 },
-    { id: "TP5", minEsal: 1000001, maxEsal: 1500000, reliability: 85, pi: 4.0, pt: 2.5 },
-    { id: "TP6", minEsal: 1500001, maxEsal: 3000000, reliability: 85, pi: 4.0, pt: 2.5 },
-    { id: "TP7", minEsal: 3000001, maxEsal: 5000000, reliability: 85, pi: 4.0, pt: 2.5 },
-    { id: "TP8", minEsal: 5000001, maxEsal: 7500000, reliability: 90, pi: 4.0, pt: 2.5 },
-    { id: "TP9", minEsal: 7500001, maxEsal: 10000000, reliability: 90, pi: 4.0, pt: 2.5 },
-    { id: "TP10", minEsal: 10000001, maxEsal: 12500000, reliability: 90, pi: 4.0, pt: 2.5 },
-    { id: "TP11", minEsal: 12500001, maxEsal: 15000000, reliability: 90, pi: 4.0, pt: 2.5 },
-    { id: "TP12", minEsal: 15000001, maxEsal: 20000000, reliability: 95, pi: 4.2, pt: 3.0 },
-    { id: "TP13", minEsal: 20000001, maxEsal: 25000000, reliability: 95, pi: 4.2, pt: 3.0 },
-    { id: "TP14", minEsal: 25000001, maxEsal: 30000000, reliability: 95, pi: 4.2, pt: 3.0 },
-    { id: "TP15", minEsal: 30000001, maxEsal: Infinity, reliability: 95, pi: 4.2, pt: 3.0 },
-  ],
-  ce010PaverDesignEals: {
-    express: { label: "Via expresa", designEal: 28_400_000, reliability: 90 },
-    arterialMajor: { label: "Via arterial mayor", designEal: 8_300_000, reliability: 85 },
-    arterialMinor: { label: "Via arterial menor", designEal: 8_300_000, reliability: 85 },
-    collector: { label: "Via colectora", designEal: 3_000_000, reliability: 80 },
-    local: { label: "Via local / estacionamiento", designEal: 840_000, reliability: 75 },
-    urbanDevelopment: { label: "Habilitacion urbana", designEal: 300_000, reliability: 75 },
+  mtc2014: {
+    trafficClasses: [
+      { id: "TP0", minEsal: 75_001, maxEsal: 150_000, reliability: 65, pi: 3.8, pt: 2.0 },
+      { id: "TP1", minEsal: 150_001, maxEsal: 300_000, reliability: 70, pi: 3.8, pt: 2.0 },
+      { id: "TP2", minEsal: 300_001, maxEsal: 500_000, reliability: 75, pi: 3.8, pt: 2.0 },
+      { id: "TP3", minEsal: 500_001, maxEsal: 750_000, reliability: 80, pi: 3.8, pt: 2.0 },
+      { id: "TP4", minEsal: 750_001, maxEsal: 1_000_000, reliability: 80, pi: 3.8, pt: 2.0 },
+      { id: "TP5", minEsal: 1_000_001, maxEsal: 1_500_000, reliability: 85, pi: 4.0, pt: 2.5 },
+      { id: "TP6", minEsal: 1_500_001, maxEsal: 3_000_000, reliability: 85, pi: 4.0, pt: 2.5 },
+      { id: "TP7", minEsal: 3_000_001, maxEsal: 5_000_000, reliability: 85, pi: 4.0, pt: 2.5 },
+      { id: "TP8", minEsal: 5_000_001, maxEsal: 7_500_000, reliability: 90, pi: 4.0, pt: 2.5 },
+      { id: "TP9", minEsal: 7_500_001, maxEsal: 10_000_000, reliability: 90, pi: 4.0, pt: 2.5 },
+      { id: "TP10", minEsal: 10_000_001, maxEsal: 12_500_000, reliability: 90, pi: 4.0, pt: 2.5 },
+      { id: "TP11", minEsal: 12_500_001, maxEsal: 15_000_000, reliability: 90, pi: 4.0, pt: 2.5 },
+      { id: "TP12", minEsal: 15_000_001, maxEsal: 20_000_000, reliability: 95, pi: 4.2, pt: 3.0 },
+      { id: "TP13", minEsal: 20_000_001, maxEsal: 25_000_000, reliability: 95, pi: 4.2, pt: 3.0 },
+      { id: "TP14", minEsal: 25_000_001, maxEsal: 30_000_000, reliability: 95, pi: 4.2, pt: 3.0 },
+      { id: "TP15", minEsal: 30_000_001, maxEsal: Infinity, reliability: 95, pi: 4.2, pt: 3.0 },
+    ],
+    limits: {
+      mtcCatalogMaxEsal: 30_000_000,
+      mtcPavedMinEsal: 75_001,
+      coldMixMaxEsal: 1_000_000,
+      surfaceTreatmentMaxEsal: 500_000,
+    },
   },
-  urbanReferenceDefaults: {
-    express: { label: "Via expresa", reliability: 90, pi: 4.2, pt: 3.0, asphaltMin: 8 },
-    arterialMajor: { label: "Via arterial mayor", reliability: 85, pi: 4.0, pt: 2.5, asphaltMin: 8 },
-    arterialMinor: { label: "Via arterial menor", reliability: 85, pi: 4.0, pt: 2.5, asphaltMin: 7 },
-    collector: { label: "Via colectora", reliability: 80, pi: 4.0, pt: 2.5, asphaltMin: 6 },
-    local: { label: "Via local", reliability: 75, pi: 3.8, pt: 2.0, asphaltMin: 5 },
-    urbanDevelopment: { label: "Habilitacion urbana", reliability: 75, pi: 3.8, pt: 2.0, asphaltMin: 5 },
+  ce010: {
+    paverDesignEals: {
+      express: { label: "Via expresa", designEal: 28_400_000, reliability: 90, source: "CE.010 Anexo F Tabla F2" },
+      arterial: { label: "Via arterial", designEal: 8_300_000, reliability: 85, source: "CE.010 Anexo F Tabla F2" },
+      collector: { label: "Via colectora", designEal: 3_000_000, reliability: 80, source: "CE.010 Anexo F Tabla F2" },
+      local: { label: "Via local / estacionamiento", designEal: 840_000, reliability: 75, source: "CE.010 Anexo F Tabla F2" },
+    },
+    paverDesignClassByUrbanClass: {
+      urbanDevelopment: "local",
+      local: "local",
+      collector: "collector",
+      arterialMinor: "arterial",
+      arterialMajor: "arterial",
+      express: "express",
+    },
+    rigidScopeNote: "CE.010 Anexo D usa ADTT, modulo k, modulo de rotura MR, periodo de diseno y tablas PCA/PCAPAV.",
+    flexibleScopeNote: "CE.010 permite Instituto del Asfalto, AASHTO-93 y Anexo B; este simulador usa una verificacion estructural tipo AASHTO.",
   },
-  urbanRoadEsalRanges: [
-    { id: "urbanDevelopment", label: "Habilitacion urbana", minEsal: 0, maxEsal: 300_000 },
-    { id: "local", label: "Local", minEsal: 300_001, maxEsal: 840_000 },
-    { id: "collector", label: "Colectora", minEsal: 840_001, maxEsal: 3_000_000 },
-    { id: "arterialMinor", label: "Arteria menor", minEsal: 3_000_001, maxEsal: 8_300_000 },
-    { id: "arterialMajor", label: "Arteria mayor", minEsal: 8_300_001, maxEsal: 28_400_000 },
-    { id: "express", label: "Expresa", minEsal: 28_400_001, maxEsal: Infinity },
-  ],
-  limits: {
-    mtcCatalogMaxEsal: 30_000_000,
-    mtcPavedMinEsal: 75_001,
-    coldMixMaxEsal: 1_000_000,
-    surfaceTreatmentMaxEsal: 500_000,
-    rigidJ40MaxEsal: 1_000_000,
+  simulation: {
+    urbanReferenceDefaults: {
+      express: { label: "Via expresa", reliability: 90, pi: 4.2, pt: 3.0, asphaltMin: 8 },
+      arterialMajor: { label: "Via arterial mayor", reliability: 85, pi: 4.0, pt: 2.5, asphaltMin: 8 },
+      arterialMinor: { label: "Via arterial menor", reliability: 85, pi: 4.0, pt: 2.5, asphaltMin: 7 },
+      collector: { label: "Via colectora", reliability: 80, pi: 4.0, pt: 2.5, asphaltMin: 6 },
+      local: { label: "Via local", reliability: 75, pi: 3.8, pt: 2.0, asphaltMin: 5 },
+      urbanDevelopment: { label: "Habilitacion urbana", reliability: 75, pi: 3.8, pt: 2.0, asphaltMin: 5 },
+    },
+    urbanRoadEsalRanges: [
+      { id: "urbanDevelopment", label: "Habilitacion urbana", minEsal: 0, maxEsal: 300_000 },
+      { id: "local", label: "Local", minEsal: 300_001, maxEsal: 840_000 },
+      { id: "collector", label: "Colectora", minEsal: 840_001, maxEsal: 3_000_000 },
+      { id: "arterialMinor", label: "Arteria menor", minEsal: 3_000_001, maxEsal: 8_300_000 },
+      { id: "arterialMajor", label: "Arteria mayor", minEsal: 8_300_001, maxEsal: 28_400_000 },
+      { id: "express", label: "Expresa", minEsal: 28_400_001, maxEsal: Infinity },
+    ],
+    limits: {
+      rigidJ40MaxEsal: 1_000_000,
+    },
   },
 };
 
@@ -305,6 +382,7 @@ function updateModeControls() {
   const usesA3 = usesFlexibleCoefficients && hasSubbase;
 
   trafficCalculationFields.classList.toggle("hidden", fields.trafficMode.value !== "calculated");
+  directEsalWrap.classList.toggle("hidden", !usesDirectEsalInput());
   coldSettings.classList.toggle("hidden", fields.pavementType.value !== "coldFlexible");
   rigidSettings.classList.toggle("hidden", fields.pavementType.value !== "rigid");
   paverSettings.classList.toggle("hidden", fields.pavementType.value !== "pavers");
@@ -401,7 +479,27 @@ function activeSubbaseDepth() {
   return hasSubbaseLayer() ? value("subbaseDepth") : 0;
 }
 
+function selectedUrbanRange() {
+  return normativeData.simulation.urbanRoadEsalRanges.find((item) => item.id === fields.urbanClass.value);
+}
+
+function urbanRepresentativeEsal() {
+  if (fields.projectType.value !== "urban") return null;
+  const norm = urbanNormValues();
+  if (fields.pavementType.value === "pavers" && norm.designEal) return norm.designEal;
+  const range = selectedUrbanRange();
+  if (range && range.maxEsal !== Infinity) return range.maxEsal;
+  return null;
+}
+
+function usesDirectEsalInput() {
+  return fields.trafficMode.value === "direct" || (fields.trafficMode.value === "urbanClass" && !urbanRepresentativeEsal());
+}
+
 function designLaneEsal() {
+  if (fields.trafficMode.value === "urbanClass") {
+    return urbanRepresentativeEsal() || Math.max(10000, value("directDesignEsal"));
+  }
   if (fields.trafficMode.value === "direct") {
     return Math.max(10000, value("directDesignEsal"));
   }
@@ -425,12 +523,21 @@ function modeSpecificFactor() {
   return 1;
 }
 
+function ce010PaverDesignForUrbanClass(urbanClass) {
+  const designClass = normativeData.ce010.paverDesignClassByUrbanClass[urbanClass] || "local";
+  return {
+    ...normativeData.ce010.paverDesignEals[designClass],
+    designClass,
+  };
+}
+
 function roadTrafficClass(esal) {
-  if (esal < normativeData.limits.mtcPavedMinEsal) {
+  const mtcLimits = normativeData.mtc2014.limits;
+  if (esal < mtcLimits.mtcPavedMinEsal) {
     return {
       id: "Menor a TP0",
       minEsal: 0,
-      maxEsal: normativeData.limits.mtcPavedMinEsal - 1,
+      maxEsal: mtcLimits.mtcPavedMinEsal - 1,
       reliability: 65,
       pi: 3.8,
       pt: 2.0,
@@ -438,15 +545,15 @@ function roadTrafficClass(esal) {
     };
   }
   return (
-    normativeData.mtcTrafficClasses.find((item) => esal >= item.minEsal && esal <= item.maxEsal) ||
-    normativeData.mtcTrafficClasses[normativeData.mtcTrafficClasses.length - 1]
+    normativeData.mtc2014.trafficClasses.find((item) => esal >= item.minEsal && esal <= item.maxEsal) ||
+    normativeData.mtc2014.trafficClasses[normativeData.mtc2014.trafficClasses.length - 1]
   );
 }
 
 function urbanClassByEsal(esal) {
   return (
-    normativeData.urbanRoadEsalRanges.find((item) => esal >= item.minEsal && esal <= item.maxEsal) ||
-    normativeData.urbanRoadEsalRanges[normativeData.urbanRoadEsalRanges.length - 1]
+    normativeData.simulation.urbanRoadEsalRanges.find((item) => esal >= item.minEsal && esal <= item.maxEsal) ||
+    normativeData.simulation.urbanRoadEsalRanges[normativeData.simulation.urbanRoadEsalRanges.length - 1]
   );
 }
 
@@ -454,7 +561,7 @@ function urbanRangeStatus() {
   if (fields.projectType.value !== "urban") {
     return { applies: false, inRange: true, selected: null, recommended: null };
   }
-  const selected = normativeData.urbanRoadEsalRanges.find((item) => item.id === fields.urbanClass.value);
+  const selected = selectedUrbanRange();
   const recommended = urbanClassByEsal(designLaneEsal());
   return {
     applies: true,
@@ -471,26 +578,29 @@ function formatRange(minEsal, maxEsal) {
 
 function urbanNormValues() {
   const urbanClass = fields.urbanClass.value;
-  const reference = normativeData.urbanReferenceDefaults[urbanClass];
-  const paver = normativeData.ce010PaverDesignEals[urbanClass];
-  const roadRange = normativeData.urbanRoadEsalRanges.find((item) => item.id === urbanClass);
+  const reference = normativeData.simulation.urbanReferenceDefaults[urbanClass];
+  const paver = ce010PaverDesignForUrbanClass(urbanClass);
+  const roadRange = selectedUrbanRange();
   if (fields.pavementType.value === "pavers") {
     return {
       ...reference,
       reliability: paver.reliability,
       pt: 2.0,
       designEal: paver.designEal,
+      ce010Class: paver.designClass,
+      ce010Label: paver.label,
       roadRange,
-      source: "CE.010 Anexo F Tabla F2",
+      source: paver.source,
       scope: "adoquines",
     };
   }
+  const isRigid = fields.pavementType.value === "rigid";
   return {
     ...reference,
     designEal: null,
     roadRange,
-    source: fields.pavementType.value === "rigid" ? "CE.010 Anexo D usa ADTT y tablas PCA" : "Referencia tecnica con rangos de vias y verificacion estructural",
-    scope: fields.pavementType.value === "rigid" ? "concreto urbano" : "flexible urbano",
+    source: isRigid ? normativeData.ce010.rigidScopeNote : normativeData.ce010.flexibleScopeNote,
+    scope: isRigid ? "concreto urbano" : "flexible urbano",
   };
 }
 
@@ -499,7 +609,7 @@ function applyPeruvianNorms() {
   applyingNorm = true;
 
   urbanClassWrap.classList.toggle("hidden", fields.projectType.value !== "urban");
-  directEsalWrap.classList.toggle("hidden", fields.trafficMode.value !== "direct");
+  directEsalWrap.classList.toggle("hidden", !usesDirectEsalInput());
 
   if (fields.projectType.value === "urban") {
     const norm = urbanNormValues();
@@ -550,6 +660,19 @@ function technicalModeSummary() {
     return `MTC 2014/ICPI: adoquines con ${base.label.toLowerCase()} y ${edge.label.toLowerCase()}.`;
   }
   return pavementMode().norm;
+}
+
+function activeScopeText() {
+  if (fields.projectType.value !== "urban") {
+    return "Alcance: carretera MTC 2014; clases TP, confiabilidad y serviciabilidad segun EE de diseno.";
+  }
+  if (fields.pavementType.value === "pavers") {
+    return "Alcance: CE.010 Anexo F aplica al adoquinado; los rangos urbanos solo clasifican demanda por EE.";
+  }
+  if (fields.pavementType.value === "rigid") {
+    return "Alcance: CE.010 Anexo D requiere ADTT y tablas PCA/PCAPAV; W18 mostrado es estimacion de apoyo.";
+  }
+  return "Alcance: CE.010 permite metodos como AASHTO-93; el rango urbano no es capacidad estructural.";
 }
 
 function resilientModulusPsi() {
@@ -636,16 +759,17 @@ function finalState() {
 function normativeWarnings() {
   const warnings = [];
   const designEsal = designLaneEsal();
-  const limits = normativeData.limits;
+  const mtcLimits = normativeData.mtc2014.limits;
+  const simulationLimits = normativeData.simulation.limits;
 
-  if (fields.projectType.value === "road" && designEsal < limits.mtcPavedMinEsal) {
+  if (fields.projectType.value === "road" && designEsal < mtcLimits.mtcPavedMinEsal) {
     warnings.push({
       level: "warn",
       text: "EE menor al rango TP0 MTC para caminos pavimentados.",
     });
   }
 
-  if (fields.projectType.value === "road" && designEsal > limits.mtcCatalogMaxEsal) {
+  if (fields.projectType.value === "road" && designEsal > mtcLimits.mtcCatalogMaxEsal) {
     warnings.push({
       level: "block",
       text: "EE > 30 M: MTC exige estudio especifico fuera de catalogo.",
@@ -654,7 +778,7 @@ function normativeWarnings() {
 
   if (fields.pavementType.value === "coldFlexible") {
     const maxEsal =
-      fields.coldSurfaceType.value === "surfaceTreatment" ? limits.surfaceTreatmentMaxEsal : limits.coldMixMaxEsal;
+      fields.coldSurfaceType.value === "surfaceTreatment" ? mtcLimits.surfaceTreatmentMaxEsal : mtcLimits.coldMixMaxEsal;
     const label =
       fields.coldSurfaceType.value === "surfaceTreatment"
         ? "Tratamiento superficial bicapa recomendado hasta 500 mil EE."
@@ -664,7 +788,7 @@ function normativeWarnings() {
     }
   }
 
-  if (fields.pavementType.value === "rigid" && fields.rigidLoadTransfer.value === "4.0" && designEsal > limits.rigidJ40MaxEsal) {
+  if (fields.pavementType.value === "rigid" && fields.rigidLoadTransfer.value === "4.0" && designEsal > simulationLimits.rigidJ40MaxEsal) {
     warnings.push({
       level: "block",
       text: "J=4.0 sin pasadores solo hasta 1.00 M EE.",
@@ -676,7 +800,7 @@ function normativeWarnings() {
     const rangeStatus = urbanRangeStatus();
     const selectedRange = rangeStatus.selected;
     const recommendedRange = rangeStatus.recommended;
-    if (designEsal > limits.mtcCatalogMaxEsal) {
+    if (designEsal > mtcLimits.mtcCatalogMaxEsal) {
       warnings.push({
         level: "warn",
         text: "EE > 30 M: en urbano queda como expresa por rango de vias; sustentar aparte si se usa catalogo MTC.",
@@ -691,7 +815,7 @@ function normativeWarnings() {
     if (fields.pavementType.value === "pavers" && norm.designEal && designEsal > norm.designEal) {
       warnings.push({
         level: "warn",
-        text: `CE.010 Anexo F supera EAL de diseno para ${norm.label.toLowerCase()}: ${formatLarge(norm.designEal)}.`,
+        text: `CE.010 Anexo F supera EAL de diseno para ${norm.ce010Label.toLowerCase()} aplicado a ${norm.label.toLowerCase()}: ${formatLarge(norm.designEal)}.`,
       });
     }
     if (fields.pavementType.value === "rigid") {
@@ -775,7 +899,19 @@ function urbanRangeStepText() {
 }
 
 function urbanRangeTableLines() {
-  return normativeData.urbanRoadEsalRanges.map((item) => `${item.label}: ${formatRange(item.minEsal, item.maxEsal)}`);
+  return normativeData.simulation.urbanRoadEsalRanges.map((item) => `${item.label}: ${formatRange(item.minEsal, item.maxEsal)}`);
+}
+
+function urbanRepresentativeSourceText() {
+  const norm = urbanNormValues();
+  if (fields.pavementType.value === "pavers" && norm.designEal) {
+    return `${norm.source} (${norm.ce010Label})`;
+  }
+  const range = selectedUrbanRange();
+  if (range && range.maxEsal !== Infinity) {
+    return `limite superior del rango urbano ${range.label}`;
+  }
+  return "EE ingresado por el usuario por tratarse de rango abierto o sin valor tabulado";
 }
 
 function diagnosisLines(status) {
@@ -979,7 +1115,7 @@ function updateOutputs(state) {
   if (fields.projectType.value === "urban") {
     const norm = urbanNormValues();
     outputs.normName.textContent = `CE.010 Pavimentos Urbanos - ${norm.label}`;
-    const ealText = norm.designEal ? `EAL diseno ${formatLarge(norm.designEal)}, ` : "";
+    const ealText = norm.designEal ? `EAL diseno ${formatLarge(norm.designEal)} (${norm.ce010Label}), ` : "";
     const rangeText = norm.roadRange
       ? `Rango de via ${formatRange(norm.roadRange.minEsal, norm.roadRange.maxEsal)}. `
       : "";
@@ -992,6 +1128,7 @@ function updateOutputs(state) {
       `${technicalModeSummary()} EE ${formatLarge(trafficClass.minEsal)} a ` +
       `${trafficClass.maxEsal === Infinity ? "mas de 30 M" : formatLarge(trafficClass.maxEsal)}, R ${trafficClass.reliability}%`;
   }
+  outputs.normScope.textContent = activeScopeText();
 
   const failure = findFailureYear();
   outputs.failureYear.textContent = failure
@@ -1004,6 +1141,19 @@ function updateOutputs(state) {
 
 function updateEsalSteps() {
   const mode = pavementMode();
+  if (fields.trafficMode.value === "urbanClass") {
+    const rangeStatus = urbanRangeStatus();
+    const selected = rangeStatus.selected;
+    esalSteps.innerHTML = `
+      <p>1) Tipo de via urbana seleccionado = ${selected ? selected.label : "No definido"}</p>
+      <p>2) Fuente de demanda = ${urbanRepresentativeSourceText()}</p>
+      <p>3) EE representativo de predimensionamiento = ${formatLarge(designLaneEsal())}</p>
+      <p>4) Modelo activo = ${mode.title}. ${technicalModeSummary()}</p>
+      <p>5) ${capacityMetricLabel()} = ${formatLarge(designCapacityEsal())}</p>
+      <p>6) Consumo = EE acumulado / ${capacityMetricLabel()} = ${(simulationState(value("time")).damage * 100).toFixed(0)}%</p>
+    `;
+    return;
+  }
   if (fields.trafficMode.value === "direct") {
     esalSteps.innerHTML = `
       <p>1) EE de diseno ingresado = ${formatLarge(designLaneEsal())}</p>
@@ -1165,6 +1315,17 @@ function structureReportLines(status, mode) {
 }
 
 function trafficReportLines() {
+  if (fields.trafficMode.value === "urbanClass") {
+    const rangeStatus = urbanRangeStatus();
+    return [
+      "Modo de transito: demanda adoptada desde tipo de via urbana",
+      `Tipo de via urbana: ${rangeStatus.selected ? rangeStatus.selected.label : "No definido"}`,
+      `Fuente de demanda: ${urbanRepresentativeSourceText()}`,
+      `EE representativo: ${formatLarge(designLaneEsal())}`,
+      `Periodo de analisis: ${value("designYears").toFixed(0)} anos`,
+    ];
+  }
+
   if (fields.trafficMode.value === "direct") {
     return [
       "Modo de transito: EE de diseno ingresado directamente",
@@ -1202,6 +1363,7 @@ function reportText() {
     `Tipo de pavimento: ${mode.title}`,
     `Normativa: ${outputs.normName.textContent}`,
     `Valores normativos: ${outputs.normValues.textContent}`,
+    `Alcance del modelo: ${outputs.normScope.textContent}`,
     `Criterio tecnico activo: ${technicalModeSummary()}`,
     `Resultado: ${status.title}`,
     reportWarnings.length ? `Advertencias normativas: ${reportWarnings.map((warning) => warning.text).join(" | ")}` : "",
@@ -1301,6 +1463,7 @@ function reportHtml() {
       <p class="muted">Generado: ${escapeHtml(generatedAt)}</p>
       <h1>Reporte resumen - Simulador integral de pavimentos</h1>
       <p>${escapeHtml(mode.title)} | ${escapeHtml(outputs.normName.textContent)}</p>
+      <p class="muted">${escapeHtml(outputs.normScope.textContent)}</p>
     </header>
 
     <div class="grid">
@@ -1967,6 +2130,7 @@ saveScenarioB.addEventListener("click", () => {
 exportReport.addEventListener("click", downloadReport);
 loadBaseExample.addEventListener("click", applyBaseExample);
 newDesign.addEventListener("click", startNewDesign);
+pciPredictionForm.addEventListener("submit", projectPci);
 
 playPause.addEventListener("click", () => {
   if (playing) stopPlayback();
@@ -1981,5 +2145,5 @@ resetButton.addEventListener("click", () => {
 
 window.addEventListener("resize", render);
 applyBaseExample();
+loadPciModel();
 requestAnimationFrame(animate);
-

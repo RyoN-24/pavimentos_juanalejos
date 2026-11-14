@@ -1,0 +1,38 @@
+[
+  {
+    "name": "historial_completo",
+    "input": {
+      "pciCurrent": 82.0,
+      "horizonYears": 3.0,
+      "segmentLength": 120.0,
+      "pciPrevious": 88.0,
+      "previousAnnualDelta": -3.0,
+      "yearsSincePrevious": 2.0
+    },
+    "expectedAnnualDelta": -7.864449977874756,
+    "expectedPciFuture": 58.40665006637573
+  },
+  {
+    "name": "sin_historial",
+    "input": {
+      "pciCurrent": 72.0,
+      "horizonYears": 5.0,
+      "segmentLength": 85.0
+    },
+    "expectedAnnualDelta": -5.410231113433838,
+    "expectedPciFuture": 44.94884443283081
+  },
+  {
+    "name": "pci_alto",
+    "input": {
+      "pciCurrent": 95.0,
+      "horizonYears": 2.0,
+      "segmentLength": 240.0,
+      "pciPrevious": 92.0,
+      "previousAnnualDelta": 1.5,
+      "yearsSincePrevious": 2.0
+    },
+    "expectedAnnualDelta": -4.648524284362793,
+    "expectedPciFuture": 85.70295143127441
+  }
+]

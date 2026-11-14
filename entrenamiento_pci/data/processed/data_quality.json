@@ -1,0 +1,31 @@
+{
+  "dc_observations": 34221,
+  "dc_unique_segments": 11993,
+  "dc_repeated_segments": 11882,
+  "dc_training_pairs": 16104,
+  "dc_probable_treatment_pairs_excluded": 6097,
+  "dc_target_year_counts": {
+    "2020": 106,
+    "2021": 182,
+    "2022": 2498,
+    "2023": 9346,
+    "2024": 3972
+  },
+  "san_diego_external_pairs": 21347,
+  "san_diego_probable_treatment_pairs_excluded": 9262,
+  "missing_fraction_training": {
+    "segment_id": 0.0,
+    "observation_year": 0.0,
+    "target_year": 0.0,
+    "prediction_horizon_years": 0.0,
+    "pci_previous": 0.504471,
+    "pci_current": 0.0,
+    "pci_future": 0.0,
+    "previous_annual_delta": 0.504471,
+    "target_annual_delta": 0.0,
+    "years_since_previous": 0.504471,
+    "segment_length": 0.0,
+    "from_measure": 0.0,
+    "to_measure": 0.0
+  }
+}

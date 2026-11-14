@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "vercel dev",
-    "test": "node tests/normative-consistency.test.js",
-    "build": "echo \"Static site: no build step required\""
+    "test": "node tests/normative-consistency.test.js && node tests/pci-predictor.test.js",
+    "build": "node --check pci-predictor.js && node --check script.js && npm test"
   }
 }

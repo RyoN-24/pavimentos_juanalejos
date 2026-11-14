@@ -1,0 +1,12 @@
+variable,definition,unit_or_domain
+segment_id,Identificador longitudinal normalizado del tramo,texto
+observation_year,Año de la medición usada como entrada,año
+target_year,Año de la medición objetivo,año
+prediction_horizon_years,Tiempo entre entrada y objetivo,años
+pci_current,PCI disponible al efectuar el pronóstico,0 a 100
+pci_previous,PCI de la medición previa del mismo tramo,0 a 100
+previous_annual_delta,Cambio anual observado antes de la entrada,puntos PCI/año
+years_since_previous,Intervalo respecto de la medición previa,años
+segment_length,Longitud geométrica reportada por la fuente,metros
+pci_future,PCI observado en el año objetivo,0 a 100
+target_annual_delta,Cambio anual de PCI que aprende el modelo,puntos PCI/año
